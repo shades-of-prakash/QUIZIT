@@ -1,42 +1,25 @@
 import { serve } from "bun";
 import index from "./index.html";
+import { connectDB } from "./api/db";
+import { Routes } from "./api/routes/routes";
+import { authRoutes } from "./api/routes/authRoutes";
+async function startServer() {
+	await connectDB();
 
-const server = serve({
-	routes: {
-		// Serve index.html for all unmatched routes.
-		"/*": index,
-
-		"/api/hello": {
-			async GET(req) {
-				return Response.json({
-					message: "Hello, world!",
-					method: "GET",
-				});
-			},
-			async PUT(req) {
-				return Response.json({
-					message: "Hello, world!",
-					method: "PUT",
-				});
-			},
+	const server = serve({
+		port: 4000,
+		routes: {
+			"/*": index,
+			...Routes,
+			...authRoutes,
 		},
-
-		"/api/hello/:name": async (req) => {
-			const name = req.params.name;
-			return Response.json({
-				message: `Hello, ${name}!`,
-			});
+		development: process.env.NODE_ENV !== "production" && {
+			hmr: true,
+			console: true,
 		},
-	},
+	});
 
-	development: process.env.NODE_ENV !== "production" && {
-		// Enable browser hot reloading in development
-		hmr: true,
+	console.log(`🚀 Server running at ${server.url}`);
+}
 
-		// Echo console logs from the browser to the server
-		console: true,
-	},
-	port: 4000,
-});
-
-console.log(`🚀 Server running at ${server.url}`);
+startServer();

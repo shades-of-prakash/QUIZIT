@@ -1,36 +1,28 @@
-import { APITester } from "./APITester";
-import "./index.css";
-
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+import { BrowserRouter, Route, Routes } from "react-router";
+import Login from "./pages/Login";
+import Quiz from "./components/Quiz";
+import AdminLogin from "./pages/AdminLogin";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "./contest/authContest";
+import ProtectedRoute from "./components/ProtectedRoute";
+const queryClient = new QueryClient();
 
 export function App() {
 	return (
-		<div className="bg-red-900 max-w-7xl mx-auto p-8 text-center relative z-10">
-			<div className="w-10 h-10 bg-red-900"></div>
-			<div className="flex justify-center items-center gap-8 mb-8">
-				<img
-					src={logo}
-					alt="Bun Logo"
-					className="h-24 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-				/>
-				<img
-					src={reactLogo}
-					alt="React Logo"
-					className="h-24 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] animate-[spin_20s_linear_infinite]"
-				/>
-			</div>
-
-			<h1 className="text-5xl font-bold my-4 leading-tight">Bun + React</h1>
-			<p>
-				Edit{" "}
-				<code className="bg-[#1a1a1a] px-2 py-1 rounded font-mono">
-					src/App.tsx
-				</code>{" "}
-				and save to test HMR
-			</p>
-			<APITester />
-		</div>
+		<QueryClientProvider client={queryClient}>
+			<AuthProvider>
+				<BrowserRouter>
+					<Routes>
+						<Route path="/" element={<Login />} />
+						<Route path="/quiz" element={<Quiz />} />
+						<Route path="/admin-login" element={<AdminLogin />} />
+						<Route element={<ProtectedRoute />}>
+							<Route path="/admin" element={<div>Admin After login</div>} />
+						</Route>
+					</Routes>
+				</BrowserRouter>
+			</AuthProvider>
+		</QueryClientProvider>
 	);
 }
 
