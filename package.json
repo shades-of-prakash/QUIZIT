@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "concurrently \"bunx tailwindcss -i ./src/index.css -o ./src/output.css --watch\" \"bun --hot src/index.tsx\"",
+		"dev": "concurrently \"bun  tailwindcss -i ./src/index.css -o ./src/output.css --watch\" \"bun --hot src/index.tsx\"",
 		"start": "NODE_ENV=production bun src/index.tsx",
 		"build": "bunx tailwindcss -i ./src/index.css -o ./src/output.css  && bun run build.ts"
 	},
@@ -18,7 +18,7 @@
 		"html-react-parser": "^5.2.6",
 		"jsonwebtoken": "^9.0.2",
 		"lucide-react": "^0.539.0",
-		"mongodb": "^6.18.0",
+		"mongoose": "^8.17.1",
 		"prismjs": "^1.30.0",
 		"react": "^19",
 		"react-dom": "^19",

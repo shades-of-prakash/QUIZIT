@@ -296,14 +296,14 @@ console.log(test());
 								return (
 									<div
 										key={option}
-										className="hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer"
+										className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer ${selectedOptions[activeQuestion] === option?"!border-black":""}`}
 										onClick={() => handleCheckboxChange(option)}
 									>
 										<input
 											type="radio"
 											id={id}
 											name="quiz-option"
-											className="w-5 h-5 accent-black rounded focus:ring-0 focus:border-black"
+											className={`w-5 h-5 accent-black rounded focus:ring-0 focus:border-black ${selectedOptions[activeQuestion] === option?"border border-accent":""}`}
 											checked={selectedOptions[activeQuestion] === option}
 											onChange={() => handleCheckboxChange(option)}
 											onClick={(e) => e.stopPropagation()}
@@ -322,7 +322,6 @@ console.log(test());
 				</div>
 			</div>
 
-			{/* NAVIGATION */}
 			<div className="w-full flex items-center justify-end mb-10 gap-3 px-4 py-2 select-none">
 				<button
 					onClick={handlePrevious}

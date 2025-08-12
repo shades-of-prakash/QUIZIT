@@ -3,8 +3,10 @@ import Login from "./pages/Login";
 import Quiz from "./components/Quiz";
 import AdminLogin from "./pages/AdminLogin";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./contest/authContest";
+import { AuthProvider } from "./context/authContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+// import Dashboard from "./components/Dashboard";
+import DashboardLayout from "./components/DashboardLayout";
 const queryClient = new QueryClient();
 
 export function App() {
@@ -16,8 +18,9 @@ export function App() {
 						<Route path="/" element={<Login />} />
 						<Route path="/quiz" element={<Quiz />} />
 						<Route path="/admin-login" element={<AdminLogin />} />
+						<Route/>
 						<Route element={<ProtectedRoute />}>
-							<Route path="/admin" element={<div>Admin After login</div>} />
+							<Route path="/admin" element={<DashboardLayout/>} />
 						</Route>
 					</Routes>
 				</BrowserRouter>

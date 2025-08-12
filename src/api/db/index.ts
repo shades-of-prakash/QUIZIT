@@ -1,17 +1,17 @@
-import { MongoClient } from "mongodb";
-const uri =
-	"mongodb+srv://admin:quizitrvrjc1985@quizit.ol15itk.mongodb.net/?retryWrites=true&w=majority&appName=quizit";
-const client = new MongoClient(uri);
+import mongoose from "mongoose";
 
-export let db: null | ReturnType<MongoClient["db"]> = null;
+const uri =
+  "mongodb+srv://admin:quizitrvrjc1985@quizit.ol15itk.mongodb.net/?retryWrites=true&w=majority&appName=quizitssl=true&authSource=admin";
+
+export let db: null | mongoose.mongo.Db = null;
 
 export async function connectDB() {
-	try {
-		await client.connect();
-		db = client.db("QUIZIT");
-		console.log("MongoDB Atlas connected");
-	} catch (error) {
-		console.error("MongoDB connection error:", error);
-		throw error;
-	}
+  try {
+    await mongoose.connect(uri);
+    db = mongoose.connection.getClient().db("QUIZIT");
+    console.log("MongoDB Atlas connected to QUIZIT database");
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    throw error;
+  }
 }

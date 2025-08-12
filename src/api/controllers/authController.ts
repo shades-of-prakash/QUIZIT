@@ -6,6 +6,7 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 const usersCollection = () => db!.collection("admin");
 
+
 function generateToken(payload: object) {
 	return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 }
@@ -60,15 +61,15 @@ export async function login(req: Request) {
 
 export async function getUser(req: Request) {
 	const { unauthorizedResponse, decodedUser } = await authMiddleware(req);
+	console.log(unauthorizedResponse,decodedUser);
 	if (unauthorizedResponse) return unauthorizedResponse;
 
 	const decoded = decodedUser as { username: string };
-
+	console.log(decoded);
 	const user = await usersCollection().findOne(
 		{ username: decoded.username },
 		{ projection: { password: 0 } }
 	);
-
 	if (!user) {
 		return new Response(JSON.stringify({ message: "User not found" }), {
 			status: 404,
