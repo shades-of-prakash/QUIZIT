@@ -9,6 +9,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import Results from "./components/Results";
 import Createquiz from "./components/Createquiz";
+import { Toaster } from "sonner";
+
 const queryClient = new QueryClient();
 
 export function App() {
@@ -16,6 +18,7 @@ export function App() {
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
 				<BrowserRouter>
+					<Toaster position="top-center"/>
 					<Routes>
 						<Route path="/" element={<Login />} />
 						<Route path="/quiz" element={<Quiz />} />

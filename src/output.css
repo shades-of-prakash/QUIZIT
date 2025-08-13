@@ -142,12 +142,16 @@ pre[class*="language-"] {
   cursor: help;
 }
 
-.static {
-  position: static;
-}
-
 .fixed {
   position: fixed;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.relative {
+  position: relative;
 }
 
 .left-0 {
@@ -176,6 +180,10 @@ pre[class*="language-"] {
 
 .ml-32 {
   margin-left: 8rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
 }
 
 .mt-3 {
@@ -222,6 +230,10 @@ pre[class*="language-"] {
   height: 4rem;
 }
 
+.h-32 {
+  height: 8rem;
+}
+
 .h-5 {
   height: 1.25rem;
 }
@@ -240,6 +252,10 @@ pre[class*="language-"] {
 
 .h-screen {
   height: 100vh;
+}
+
+.max-h-60 {
+  max-height: 15rem;
 }
 
 .w-1\/2 {
@@ -340,6 +356,10 @@ pre[class*="language-"] {
   gap: 1.5rem;
 }
 
+.overflow-auto {
+  overflow: auto;
+}
+
 .overflow-hidden {
   overflow: hidden;
 }
@@ -391,10 +411,6 @@ pre[class*="language-"] {
 .\!border-black {
   --tw-border-opacity: 1 !important;
   border-color: rgb(0 0 0 / var(--tw-border-opacity, 1)) !important;
-}
-
-.border-accent {
-  border-color: var(--accent-color);
 }
 
 .border-black {
@@ -543,16 +559,16 @@ pre[class*="language-"] {
   padding: 2.5rem;
 }
 
-.p-12 {
-  padding: 3rem;
-}
-
 .p-3 {
   padding: 0.75rem;
 }
 
 .p-4 {
   padding: 1rem;
+}
+
+.p-5 {
+  padding: 1.25rem;
 }
 
 .px-10 {
@@ -1439,4 +1455,46 @@ pre[class*="language-"]::-webkit-scrollbar-thumb {
 
 .disabled\:opacity-50:disabled {
   opacity: 0.5;
+}
+
+@media (min-width: 1024px) {
+  .lg\:mt-4 {
+    margin-top: 1rem;
+  }
+
+  .lg\:gap-3 {
+    gap: 0.75rem;
+  }
+
+  .lg\:p-2 {
+    padding: 0.5rem;
+  }
+
+  .lg\:text-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .lg\:text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .xl\:mt-8 {
+    margin-top: 2rem;
+  }
+
+  .xl\:gap-4 {
+    gap: 1rem;
+  }
+
+  .xl\:p-12 {
+    padding: 3rem;
+  }
+
+  .xl\:p-3 {
+    padding: 0.75rem;
+  }
 }

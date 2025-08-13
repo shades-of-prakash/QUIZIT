@@ -1,171 +1,199 @@
-import { useState } from "react";
-import type { ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { X, Upload } from "lucide-react";
 import Papa from "papaparse";
+import { toast } from "sonner";
 
 interface CreateQuizModalProps {
-	onClose: () => void;
+  onClose: () => void;
 }
 
 export default function CreateQuizModal({ onClose }: CreateQuizModalProps) {
-	const [selectedFile, setSelectedFile] = useState<File | null>(null);
-	const [quizName, setQuizName] = useState("");
-	const [questions, setQuestions] = useState("");
-	const [duration, setDuration] = useState("");
-	const [parsedData, setParsedData] = useState<any[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [quizName, setQuizName] = useState("");
+  const [questions, setQuestions] = useState("");
+  const [duration, setDuration] = useState("");
+  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (file) {
-			setSelectedFile(file);
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
 
-			Papa.parse(file, {
-				header: true,
-				skipEmptyLines: true,
-				complete: (result) => {
-					const formatted = result.data.map((row: any) => ({
-						sno: row.sno,
-						question: row.question,
-						options: row.options?.split(";") || [],
-						correct_options: row.correct_options?.split(";") || [],
-					}));
-					setParsedData(formatted);
-					console.log("Parsed CSV:", formatted);
-				},
-			});
-		}
-	};
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (result) => {
+          const formatted = result.data.map((row: any) => ({
+            sno: row.sno,
+            question: row.question,
+            options: row.options?.split(";") || [],
+            correct_options: row.correct_options?.split(";") || [],
+            multiple: row.multiple === "true" || false,
+          }));
+          setParsedData(formatted);
+          console.log("Parsed CSV:", formatted);
+        },
+      });
+    }
+  };
 
-	const isFormValid =
-		Boolean(selectedFile) &&
-		quizName.trim().length > 0 &&
-		questions.trim().length > 0 &&
-		duration.trim().length > 0;
+  const isFormValid =
+    Boolean(selectedFile) &&
+    quizName.trim().length > 0 &&
+    questions.trim().length > 0 &&
+    duration.trim().length > 0;
 
-	const handleCreateQuiz = () => {
-		if (isFormValid) {
-			console.log("Creating quiz:", {
-				name: quizName,
-				totalQuestions: questions,
-				duration,
-				questionsData: parsedData,
-			});
-		}
-	};
+  const handleCreateQuiz = async () => {
+    if (!isFormValid) return;
 
-	return (
-		<div className="fixed z-10 top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
-			<div className="flex flex-col gap-1 w-[800px] h-[600px] bg-white p-4 rounded-md">
-				{/* Header */}
-				<div className="flex items-center justify-between">
-					<h2 className="font-bold text-xl">Create New Quiz</h2>
-					<button
-						onClick={onClose}
-						className="w-10 h-10 flex items-center justify-center hover:bg-neutral-100 hover:border rounded-full hover:border-neutral-400"
-					>
-						<X />
-					</button>
-				</div>
+    setLoading(true);
 
-				{/* Content */}
-				<div className="flex w-full flex-1 border border-neutral-200 rounded-md">
-					{/* Upload Section */}
-					<div className="w-1/2 flex-1 rounded-md p-4 pr-3">
-						<div className="w-full h-full flex flex-col items-center justify-center rounded-md bg-[#8fd45a2e] border border-dashed border-neutral-500 p-4">
-							<Upload className="w-10 h-10 text-neutral-600 mb-2" />
-							<p className="text-base text-neutral-600">
-								Upload your quiz file
-							</p>
+    try {
+      const response = await fetch("/api/create-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          name: quizName,
+          duration,
+          totalQuestions: parsedData.length,
+          questions: parsedData,
+        }),
+      });
 
-							<input
-								id="file-upload"
-								type="file"
-								accept=".csv"
-								className="hidden"
-								onChange={handleFileChange}
-							/>
-							<p className="m-2 text-sm text-neutral-500 italic">
-								Only .csv files are accepted
-							</p>
-							<label
-								htmlFor="file-upload"
-								className="px-4 py-2 bg-black text-white rounded-md cursor-pointer hover:bg-neutral-800 transition"
-							>
-								Browse file
-							</label>
+      const data = await response.json();
 
-							{selectedFile && (
-								<p className="mt-3 text-sm text-white text-center bg-black border rounded-md py-1 px-2">
-									{selectedFile.name}
-								</p>
-							)}
-						</div>
-					</div>
+      if (response.ok) {
+        toast.success("Quiz created successfully!");
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to create quiz");
+      }
+    } catch (error) {
+      console.error("Create quiz error:", error);
+      toast.error("Server error while creating quiz.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-					{/* Quiz Details */}
-					<div className="w-1/2 flex-1 flex flex-col justify-between p-4 pl-0">
-						<div className="flex flex-col h-full w-full gap-4">
-							<h1 className="text-xl font-bold text-neutral-700">
-								Enter Quiz Details
-							</h1>
-							<div className="flex flex-col gap-2">
-								<label htmlFor="quiz-name" className="font-medium">
-									Name
-								</label>
-								<input
-									id="quiz-name"
-									type="text"
-									value={quizName}
-									onChange={(e) => setQuizName(e.target.value)}
-									className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Enter quiz name"
-								/>
-							</div>
-							<div className="flex flex-col gap-2">
-								<label htmlFor="quiz-questions" className="font-medium">
-									Number of questions
-								</label>
-								<input
-									id="quiz-questions"
-									type="number"
-									min="1"
-									value={questions}
-									onChange={(e) => setQuestions(e.target.value)}
-									className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g., 10"
-								/>
-							</div>
-							<div className="flex flex-col gap-2">
-								<label htmlFor="quiz-duration" className="font-medium">
-									Duration (minutes)
-								</label>
-								<input
-									id="quiz-duration"
-									type="number"
-									min="1"
-									value={duration}
-									onChange={(e) => setDuration(e.target.value)}
-									className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g., 30"
-								/>
-							</div>
-						</div>
-						<div className="w-full flex justify-end">
-							<button
-								onClick={handleCreateQuiz}
-								disabled={!isFormValid}
-								className={`px-6 py-2 font-semibold rounded-md transition-all ${
-									isFormValid
-										? "bg-black text-white hover:bg-neutral-800 cursor-pointer"
-										: "bg-gray-300 text-gray-500 cursor-not-allowed"
-								}`}
-							>
-								Create
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+  return (
+    <>
+      <div className="fixed z-10 top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="flex flex-col gap-1 w-[800px] h-[600px] bg-white p-4 rounded-md">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-xl">Create New Quiz</h2>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 flex items-center justify-center hover:bg-neutral-100 hover:border rounded-full hover:border-neutral-400"
+            >
+              <X />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex w-full flex-1 border border-neutral-200 rounded-md">
+            {/* Upload Section */}
+            <div className="w-1/2 flex-1 rounded-md p-4 pr-3">
+              <div className="w-full h-full flex flex-col items-center justify-center rounded-md bg-[#8fd45a2e] border border-dashed border-neutral-500 p-4">
+                <Upload className="w-10 h-10 text-neutral-600 mb-2" />
+                <p className="text-base text-neutral-600">Upload your quiz file</p>
+
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <p className="m-2 text-sm text-neutral-500 italic">
+                  Only .csv files are accepted
+                </p>
+                <label
+                  htmlFor="file-upload"
+                  className="px-4 py-2 bg-black text-white rounded-md cursor-pointer hover:bg-neutral-800 transition"
+                >
+                  Browse file
+                </label>
+
+                {selectedFile && (
+                  <p className="mt-3 text-sm text-white text-center bg-black border rounded-md py-1 px-2">
+                    {selectedFile.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Quiz Details */}
+            <div className="w-1/2 flex-1 flex flex-col justify-between p-4 pl-0">
+              <div className="flex flex-col h-full w-full gap-4">
+                <h1 className="text-xl font-bold text-neutral-700">
+                  Enter Quiz Details
+                </h1>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="quiz-name" className="font-medium">
+                    Name
+                  </label>
+                  <input
+                    id="quiz-name"
+                    type="text"
+                    value={quizName}
+                    onChange={(e) => setQuizName(e.target.value)}
+                    className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter quiz name"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="quiz-questions" className="font-medium">
+                    Number of questions
+                  </label>
+                  <input
+                    id="quiz-questions"
+                    type="number"
+                    min="1"
+                    value={questions}
+                    onChange={(e) => setQuestions(e.target.value)}
+                    className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 10"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="quiz-duration" className="font-medium">
+                    Duration (minutes)
+                  </label>
+                  <input
+                    id="quiz-duration"
+                    type="number"
+                    min="1"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 30"
+                  />
+                </div>
+              </div>
+
+              <div className="w-full flex justify-end">
+                <button
+                  onClick={handleCreateQuiz}
+                  disabled={!isFormValid || loading}
+                  className={`px-6 py-2 font-semibold rounded-md transition-all ${
+                    isFormValid && !loading
+                      ? "bg-black text-white hover:bg-neutral-800 cursor-pointer"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  {loading ? "Creating..." : "Create"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
