@@ -1,8 +1,8 @@
 import { serve } from "bun";
 import index from "./index.html";
 import { connectDB } from "./api/db";
-import { Routes } from "./api/routes/routes";
 import { authRoutes } from "./api/routes/authRoutes";
+import { quizRoutes } from "./api/routes/quizRoutes";
 async function startServer() {
 	await connectDB();
 
@@ -10,8 +10,8 @@ async function startServer() {
 		port: 4000,
 		routes: {
 			"/*": index,
-			...Routes,
 			...authRoutes,
+			...quizRoutes,
 		},
 		development: process.env.NODE_ENV !== "production" && {
 			hmr: true,

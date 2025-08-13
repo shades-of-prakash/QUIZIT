@@ -5,7 +5,7 @@ interface SliderProps {
 	total: number;
 	active: number;
 	setActive: (index: number) => void;
-	selectedOptions: { [key: number]: string };
+	selectedOptions: { [key: number]: string[] };
 	skippedQuestions: Set<number>;
 }
 

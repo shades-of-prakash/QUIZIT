@@ -10,8 +10,15 @@ import "prismjs/components/prism-sql";
 import "prismjs/components/prism-java";
 import "prismjs/components/prism-c";
 
-const Quiz = () => {
-	const questions = [
+type Question = {
+	question: string;
+	options: string[];
+	answer: string[];
+	multiple: boolean;
+};
+
+const Quiz: React.FC = () => {
+	const questions: Question[] = [
 		{
 			question: `In JavaScript, what will be logged to the console?<br><pre><code class="language-javascript">
 let count = 0;
@@ -30,29 +37,12 @@ increment();
 				"0 only",
 				"Error",
 			],
-			answer: "0, 1, 2 each after 1 second",
+			answer: ["0, 1, 2 each after 1 second"],
+			multiple: false,
 		},
 		{
-			question: `In Python, what will the following output and why?<br><pre><code class="language-python">
-def extend_list(val, list=[]):
-    list.append(val)
-    return list
-
-print(extend_list(10))
-print(extend_list(123, []))
-print(extend_list('a'))
-</code></pre>`,
-			options: [
-				"[10], [123], ['a']",
-				"[10], [123], [10, 'a']",
-				"[10], [123], [10, 123, 'a']",
-				"Error due to mutable default argument",
-			],
-			answer: "[10], [123], [10, 'a']",
-		},
-		{
-			question: `In SQL, given a table <code>orders(id, customer_id, amount)</code>, which query returns the top 3 customers by total amount spent?<br><pre><code class="language-sql">
--- Choose the correct option
+			question: `In SQL, which are valid ways to get top 3 customers by total amount spent?<br><pre><code class="language-sql">
+-- Choose all correct answers
 </code></pre>`,
 			options: [
 				"SELECT customer_id, SUM(amount) FROM orders GROUP BY customer_id LIMIT 3;",
@@ -60,115 +50,20 @@ print(extend_list('a'))
 				"SELECT TOP 3 customer_id, SUM(amount) FROM orders GROUP BY customer_id ORDER BY SUM(amount);",
 				"Both B and C are correct depending on SQL dialect",
 			],
-			answer: "Both B and C are correct depending on SQL dialect",
-		},
-		{
-			question: `In Java, what is the output?<br><pre><code class="language-java">
-class Test {
-    public static void main(String[] args) {
-        String s1 = "abc";
-        String s2 = s1.concat("def");
-        System.out.println(s1);
-        System.out.println(s2);
-    }
-}
-</code></pre>`,
-			options: [
-				`"abcdef" then "abcdef"`,
-				`"abc" then "abcdef"`,
-				`"abc" then "abc"`,
-				"Compiler error",
+			answer: [
+				"SELECT customer_id, SUM(amount) as total FROM orders GROUP BY customer_id ORDER BY total DESC LIMIT 3;",
+				"SELECT TOP 3 customer_id, SUM(amount) FROM orders GROUP BY customer_id ORDER BY SUM(amount);",
+				"Both B and C are correct depending on SQL dialect",
 			],
-			answer: `"abc" then "abcdef"`,
+			multiple: true,
 		},
-		{
-			question: `In C, what is the result of this program?<br><pre><code class="language-c">
-#include &lt;stdio.h&gt;
-int main() {
-    int x = 5;
-    printf("%d %d %d", x, x++, ++x);
-    return 0;
-}
-</code></pre>`,
-			options: ["5 5 7", "5 6 7", "Undefined behavior", "Compiler error"],
-			answer: "Undefined behavior",
-		},
-		{
-			question: `In React, what is the result of this code?<br><pre><code class="language-javascript">
-import React, { useState, useEffect } from 'react';
-
-function App() {
-    const [count, setCount] = useState(0);
-
-    useEffect(() =&gt; {
-        setCount(count + 1);
-    }, []);
-
-    return &lt;div&gt;{count}&lt;/div&gt;;
-}
-</code></pre>`,
-			options: ["0", "1", "Infinite re-render", "Error"],
-			answer: "1",
-		},
-		{
-			question: `In JavaScript, what is the output?<br><pre><code class="language-javascript">
-console.log([] == ![]);
-console.log([] === ![]);
-</code></pre>`,
-			options: [
-				"true then false",
-				"false then false",
-				"true then true",
-				"false then true",
-			],
-			answer: "true then false",
-		},
-		{
-			question: `In Python, what does this print?<br><pre><code class="language-python">
-a = [[1, 2]] * 3
-a[0][0] = 99
-print(a)
-</code></pre>`,
-			options: [
-				"[[99, 2], [1, 2], [1, 2]]",
-				"[[99, 2], [99, 2], [99, 2]]",
-				"[[1, 2], [1, 2], [99, 2]]",
-				"Error",
-			],
-			answer: "[[99, 2], [99, 2], [99, 2]]",
-		},
-		{
-			question: `In Git, what is the effect of <pre> <code>git cherry-pick &lt;commit-hash&gt;</code></pre>?<br><pre><code class="language-bash">
-# Choose the correct option
-</code></pre>`,
-			options: [
-				"Removes the commit from history",
-				"Applies the changes from the specified commit to the current branch",
-				"Merges two branches",
-				"Resets HEAD to the commit",
-			],
-			answer:
-				"Applies the changes from the specified commit to the current branch",
-		},
-		{
-			question: `In JavaScript, what is the output?<br><pre><code class="language-javascript">
-function test() {
-    return
-    {
-        value: 5
-    };
-}
-console.log(test());
-</code></pre>`,
-			options: ["{ value: 5 }", "undefined", "Error", "null"],
-			answer: "undefined",
-		},
+		// ...rest of your questions
 	];
 
-	const [activeQuestion, setActiveQuestion] = useState(0);
+	const [activeQuestion, setActiveQuestion] = useState<number>(0);
 
 	const [selectedOptions, setSelectedOptions] = useState<{
-		[key: number]: string;
+		[key: number]: string[];
 	}>({});
 
 	const [skippedQuestions, setSkippedQuestions] = useState<Set<number>>(
@@ -179,21 +74,38 @@ console.log(test());
 		Prism.highlightAll();
 	}, [activeQuestion]);
 
-	const handleCheckboxChange = (option: string) => {
+	const handleOptionChange = (option: string) => {
 		setSelectedOptions((prev) => {
-			const newSelected = { ...prev, [activeQuestion]: option };
+			const isMultiple = questions[activeQuestion]?.multiple ?? false;
+			const prevOptions = prev[activeQuestion] || [];
+
+			let updatedOptions: string[];
+			if (isMultiple) {
+				if (prevOptions.includes(option)) {
+					updatedOptions = prevOptions.filter((o) => o !== option);
+				} else {
+					updatedOptions = [...prevOptions, option];
+				}
+			} else {
+				updatedOptions = [option];
+			}
+
+			const newSelected = { ...prev, [activeQuestion]: updatedOptions };
 
 			setSkippedQuestions((prevSkipped) => {
 				const newSkipped = new Set(prevSkipped);
-				newSkipped.delete(activeQuestion);
+				if (updatedOptions.length > 0) {
+					newSkipped.delete(activeQuestion);
+				}
 				return newSkipped;
 			});
+
 			return newSelected;
 		});
 	};
 
 	const markSkippedIfNeeded = (currentIndex: number) => {
-		if (!selectedOptions[currentIndex]) {
+		if (!selectedOptions[currentIndex]?.length) {
 			setSkippedQuestions((prev) => new Set(prev).add(currentIndex));
 		} else {
 			setSkippedQuestions((prev) => {
@@ -283,7 +195,9 @@ console.log(test());
 					<div className="w-1/2 h-full bg-neutral-50 p-10 flex flex-col gap-4">
 						<span className="font-semibold">Question {activeQuestion + 1}</span>
 						<div className="w-full font-semibold overflow-hidden">
-							{parse(questions[activeQuestion]!.question)}
+							{questions[activeQuestion]
+								? parse(questions[activeQuestion].question)
+								: null}
 						</div>
 					</div>
 
@@ -291,21 +205,27 @@ console.log(test());
 					<div className="w-1/2 flex flex-col h-full p-10 gap-3">
 						<span className="font-semibold">Answer</span>
 						<div className="flex flex-col gap-6">
-							{questions[activeQuestion]?.options.map((option, index) => {
-								const id = `quiz-option-${index}`;
+							{questions[activeQuestion]!.options.map((option, index) => {
+								const id = `quiz-option-${activeQuestion}-${index}`;
+								const isChecked =
+									selectedOptions[activeQuestion]?.includes(option) || false;
+								const isMultiple = questions[activeQuestion]?.multiple ?? false;
+
 								return (
 									<div
 										key={option}
-										className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer ${selectedOptions[activeQuestion] === option?"!border-black":""}`}
-										onClick={() => handleCheckboxChange(option)}
+										className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer ${
+											isChecked ? "!border-black" : ""
+										}`}
+										onClick={() => handleOptionChange(option)}
 									>
 										<input
-											type="radio"
+											type={isMultiple ? "checkbox" : "radio"}
 											id={id}
-											name="quiz-option"
-											className={`w-5 h-5 accent-black rounded focus:ring-0 focus:border-black ${selectedOptions[activeQuestion] === option?"border border-accent":""}`}
-											checked={selectedOptions[activeQuestion] === option}
-											onChange={() => handleCheckboxChange(option)}
+											name={`quiz-option-${activeQuestion}`}
+											className="w-5 h-5 accent-black rounded focus:ring-0 focus:border-black"
+											checked={isChecked}
+											onChange={() => handleOptionChange(option)}
 											onClick={(e) => e.stopPropagation()}
 										/>
 										<label
@@ -322,6 +242,7 @@ console.log(test());
 				</div>
 			</div>
 
+			{/* NAVIGATION */}
 			<div className="w-full flex items-center justify-end mb-10 gap-3 px-4 py-2 select-none">
 				<button
 					onClick={handlePrevious}

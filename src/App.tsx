@@ -7,6 +7,8 @@ import { AuthProvider } from "./context/authContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 // import Dashboard from "./components/Dashboard";
 import DashboardLayout from "./components/DashboardLayout";
+import Results from "./components/Results";
+import Createquiz from "./components/Createquiz";
 const queryClient = new QueryClient();
 
 export function App() {
@@ -18,9 +20,13 @@ export function App() {
 						<Route path="/" element={<Login />} />
 						<Route path="/quiz" element={<Quiz />} />
 						<Route path="/admin-login" element={<AdminLogin />} />
-						<Route/>
+
 						<Route element={<ProtectedRoute />}>
-							<Route path="/admin" element={<DashboardLayout/>} />
+							<Route path="/admin" element={<DashboardLayout />}>
+								<Route index element={<Createquiz />} />
+								<Route path="results" element={<Results />} />
+								<Route path="Createquiz" element={<Createquiz />} />
+							</Route>
 						</Route>
 					</Routes>
 				</BrowserRouter>
