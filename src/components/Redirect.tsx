@@ -1,9 +1,10 @@
-import { Navigate } from "react-router";
+import { Navigate ,useNavigate} from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
 import React from "react";
 
 const Redirect = ({ children }: { children: React.ReactNode }) => {
 	const { user, isLoading } = useUserAuth();
+	const navigate = useNavigate();
 
 	if (isLoading) {
 		return (
@@ -12,8 +13,9 @@ const Redirect = ({ children }: { children: React.ReactNode }) => {
 			</div>
 		);
 	}
+
 	if (user) {
-		return <Navigate to="/" replace />;
+		return <Navigate to="/instructions" replace />;
 	}
 
 	return <>{children}</>;

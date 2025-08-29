@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
-const uri =
-  "mongodb+srv://admin:quizitrvrjc1985@quizit.ol15itk.mongodb.net/?retryWrites=true&w=majority&appName=quizitssl=true&authSource=admin";
+const uri =Bun.env.MONGODB_URI || ""
 
 export let db: null | mongoose.mongo.Db = null;
 

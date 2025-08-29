@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 const quizzesCollection = () => db!.collection("quizzes");
+const quizSessionCollection = () => db!.collection("quiz-session");
+
 function generateUserCredentials(quizName: string, index: number) {
 	const normalized = quizName.toLowerCase().replace(/\s+/g, "");
 	const username = `${normalized}_user_${index}`;
@@ -278,3 +280,83 @@ export async function getQuizNames(req: Request): Promise<Response> {
 		);
 	}
 }
+
+
+
+// GET /api/server-time
+export async function getServerTimeController(req:Request) {
+  return new Response(
+    JSON.stringify({ serverTime: Date.now() }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+// GET /api/quiz-end-time?userId=...
+export async function getQuizEndTimeController(req:Request) {
+  const url = new URL(req.url);
+  const userId = url.searchParams.get("userId");
+
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Missing userId" }), { status: 400 });
+  }
+
+  try {
+    const session = await quizSessionCollection().findOne({ userId });
+
+    if (!session) {
+      return new Response(JSON.stringify({ error: "Session not found" }), { status: 404 });
+    }
+
+    const startTime = session.startTime instanceof Date
+      ? session.startTime.getTime()
+      : session.startTime;
+
+    const durationMinutes = session.durationMinutes;
+
+    const endTime = startTime + durationMinutes * 60 * 1000;
+
+    return new Response(
+      JSON.stringify({ endTime }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("DB error", err);
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+  }
+}
+
+export async function startQuizController(req: Request) {
+	try {
+	  const body = await req.json();
+	  const { userId, durationMinutes, quizId } = body;
+	  if (!userId || !durationMinutes || !quizId) {
+		return new Response(
+		  JSON.stringify({ error: "Missing userId, durationMinutes, or quizId" }),
+		  { status: 400 }
+		);
+	  }
+  
+	  const startTime = Date.now();
+  
+	  await quizSessionCollection().updateOne(
+		{ userId, quizId },
+		{ $set: { startTime, durationMinutes } },
+		{ upsert: true }
+	  );
+  
+	  return new Response(
+		JSON.stringify({ startTime, durationMinutes, quizId }),
+		{
+		  status: 200,
+		  headers: { "Content-Type": "application/json" },
+		}
+	  );
+	} catch (err) {
+	  console.error("DB error", err);
+	  return new Response(
+		JSON.stringify({ error: "Invalid JSON or DB Error" }),
+		{ status: 400 }
+	  );
+	}
+  }
+  

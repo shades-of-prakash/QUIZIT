@@ -106,6 +106,26 @@ const Quiz: React.FC = () => {
 		Prism.highlightAll();
 	}, [activeQuestion, questions]);
 
+	const enterFullScreen = () => {
+        const docEl = document.documentElement as any; 
+
+        if (docEl.requestFullscreen) {
+            docEl.requestFullscreen();
+        } else if (docEl.mozRequestFullScreen) {
+            docEl.mozRequestFullScreen();
+        } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();  
+        } else if (docEl.msRequestFullscreen) {
+            docEl.msRequestFullscreen(); 
+        }
+    };
+
+   
+    useEffect(() => {
+        enterFullScreen();
+    }, []);
+
+
 	const handleOptionChange = (option: string) => {
 		setSelectedOptions((prev) => {
 			const isMultiple = questions[activeQuestion]?.multiple ?? false;

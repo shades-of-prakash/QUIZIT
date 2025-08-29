@@ -3,7 +3,10 @@ import {
 	createQuizUsers,
 	getAllQuizzes,
 	getQuizNames,
+	getServerTimeController,
 	getSingleQuiz,
+	startQuizController,
+	getQuizEndTimeController
 } from "../controllers/quizController";
 
 export const quizRoutes = {
@@ -22,4 +25,14 @@ export const quizRoutes = {
 	"/api/quiznames": {
 		GET: getQuizNames,
 	},
+	
+	"/api/server-time":{
+		GET:getServerTimeController
+	},
+	"/api/quiz-end-time": {
+		GET: getQuizEndTimeController,
+	},
+	"/api/start-quiz": {
+		POST: startQuizController,
+	}
 };

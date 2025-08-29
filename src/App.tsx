@@ -5,7 +5,6 @@ import AdminLogin from "./pages/AdminLogin";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/authContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-// import Dashboard from "./components/Dashboard";
 import DashboardLayout from "./components/DashboardLayout";
 import Results from "./components/Results";
 import Createquiz from "./components/Createquiz";
@@ -14,6 +13,7 @@ import SingleQuizHandler from "./components/SingleQuizHandler";
 import { Navigate } from "react-router";
 import { UserAuthProvider } from "./context/userAuthContext";
 import UserProtectedRoute from "./components/UserProtectedRoute";
+import Instructions from "./components/Instructions";
 import Redirect from "./components/Redirect";
 const queryClient = new QueryClient();
 const Noise = () => {
@@ -55,6 +55,10 @@ export function App() {
 					<BrowserRouter>
 						<Toaster position="top-center" />
 						<Routes>
+							<Route element={<UserProtectedRoute/>}>
+								<Route path="/instructions" element={<Instructions/>}/>
+							</Route>
+							
 							<Route
 								path="/user-login"
 								element={
