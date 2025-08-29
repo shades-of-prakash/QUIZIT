@@ -1,10 +1,25 @@
-import { createQuiz } from "../controllers/quizController";
-import { getAllQuizzes } from "../controllers/quizController";
+import {
+	createQuiz,
+	createQuizUsers,
+	getAllQuizzes,
+	getQuizNames,
+	getSingleQuiz,
+} from "../controllers/quizController";
+
 export const quizRoutes = {
 	"/api/create-quiz": {
 		POST: createQuiz,
 	},
 	"/api/getquizzes": {
-		GET:getAllQuizzes
-	}
+		GET: getAllQuizzes,
+	},
+	"/api/create-quiz-users": {
+		POST: createQuizUsers,
+	},
+	"/api/quizdetails": {
+		POST: getSingleQuiz,
+	},
+	"/api/quiznames": {
+		GET: getQuizNames,
+	},
 };

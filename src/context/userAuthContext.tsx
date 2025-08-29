@@ -1,33 +1,44 @@
 import React, { createContext, useContext, type ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+
 type User = {
-	id: string;
-	name: string;
+	_id: string;
+	username: string;
+	quizId: string;
+	quizDuration: string;
 	email: string;
+	participant1?: string;
+	participant2?: string;
 };
 
 type LoginCredentials = {
 	username: string;
 	password: string;
+	quizId: string;
+	email: string;
+	participant1: string;
+	participant2: string;
 };
 
-type AuthContextType = {
+type UserAuthContextType = {
 	user: User | null;
 	isLoading: boolean;
 	isLoggedIn: boolean;
 	login: (credentials: LoginCredentials) => Promise<void>;
 	loginMutationIsLoading: boolean;
 	loginMutationError: Error | null;
+	logout: () => Promise<void>;
 };
 
 // Create context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const UserAuthContext = createContext<UserAuthContextType | undefined>(
+	undefined
+);
 
-// API call to fetch the current user (cookie-based)
 async function fetchUserApi(): Promise<User | null> {
-	const res = await fetch("/api/user", {
+	const res = await fetch("/api/me", {
 		method: "GET",
-		credentials: "include", // needed if you're using cookies & cross-origin
+		credentials: "include",
 	});
 
 	if (res.status === 401) {
@@ -37,18 +48,16 @@ async function fetchUserApi(): Promise<User | null> {
 	if (!res.ok) {
 		throw new Error("Failed to fetch user");
 	}
-
-	const response = await res.json(); // ✅ await here
-	console.log(response);
-	return response;
+	const data = await res.json();
+	console.log("me", data);
+	return data;
 }
 
 // API call to log in
-// console.log(process.env.API_URL);
 async function loginApi(credentials: LoginCredentials): Promise<User> {
-	const res = await fetch(`/api/login`, {
+	const res = await fetch(`/api/userlogin`, {
 		method: "POST",
-		credentials: "include", // send & store cookies
+		credentials: "include",
 		headers: {
 			"Content-Type": "application/json",
 		},
@@ -56,28 +65,35 @@ async function loginApi(credentials: LoginCredentials): Promise<User> {
 	});
 
 	const json = await res.json();
-	console.log(json);
 	if (!res.ok) {
 		throw new Error(json.message || "Login failed");
 	}
 
-	return json;
+	// backend sends { message, data: user }
+	return json.data;
+}
+
+// API call to log out
+async function logoutApi(): Promise<void> {
+	await fetch(`/api/auth/logout`, {
+		method: "POST",
+		credentials: "include",
+	});
 }
 
 // Provider
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
 	// Query to fetch the logged-in user
 	const {
 		data: userData,
 		isLoading,
 		refetch,
 	} = useQuery<User | null, Error>({
-		queryKey: ["currentUser"],
+		queryKey: ["currentquizUser"],
 		queryFn: fetchUserApi,
 		retry: false,
 	});
 
-	// Mutation to log in
 	const {
 		mutateAsync: loginMutation,
 		isPending: loginMutationIsLoading,
@@ -89,31 +105,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		},
 	});
 
+	// Mutation to log out
+	const { mutateAsync: logoutMutation } = useMutation<void, Error>({
+		mutationFn: logoutApi,
+		onSuccess: async () => {
+			await refetch();
+		},
+	});
+
 	const login = async (credentials: LoginCredentials) => {
 		await loginMutation(credentials);
 	};
 
-	const authContextValue: AuthContextType = {
+	const logout = async () => {
+		await logoutMutation();
+	};
+
+	const authContextValue: UserAuthContextType = {
 		user: userData ?? null,
 		isLoading,
 		isLoggedIn: !!userData,
 		login,
 		loginMutationIsLoading,
 		loginMutationError: loginMutationError || null,
+		logout,
 	};
 
 	return (
-		<AuthContext.Provider value={authContextValue}>
+		<UserAuthContext.Provider value={authContextValue}>
 			{children}
-		</AuthContext.Provider>
+		</UserAuthContext.Provider>
 	);
 };
 
-// Hook
-export const useAuth = () => {
-	const context = useContext(AuthContext);
+export const useUserAuth = () => {
+	const context = useContext(UserAuthContext);
 	if (!context) {
-		throw new Error("useAuth must be used within an AuthProvider");
+		throw new Error("useUserAuth must be used within a UserAuthProvider");
 	}
 	return context;
 };

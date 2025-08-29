@@ -28,7 +28,7 @@ function DashboardLayout() {
 				</h1>
 			</div>
 			<div className="w-full flex flex-1 ">
-				<div className="bg-neutral-100 w-1/5 h-full flex flex-col gap-1 py-1 border-r border-neutral-400">
+				<div className="bg-neutral-100 w-[180px] h-full flex flex-col gap-1 py-1 border-r border-neutral-400">
 					{menuItems.map((item, index) => {
 						return (
 							<div

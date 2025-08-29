@@ -22,6 +22,7 @@ export async function login(req: Request) {
 		}
 
 		const user = await usersCollection().findOne({ username });
+
 		if (!user) {
 			return new Response(
 				JSON.stringify({ message: "Invalid username or password" }),
@@ -30,6 +31,7 @@ export async function login(req: Request) {
 		}
 
 		const passwordMatch = await bcrypt.compare(password, user.password);
+		console.log(passwordMatch);
 		if (!passwordMatch) {
 			return new Response(
 				JSON.stringify({ message: "Invalid username or password" }),
@@ -38,8 +40,9 @@ export async function login(req: Request) {
 		}
 
 		const token = generateToken({ username });
-		const cookie = `token=${token}; HttpOnly; Path=/; Max-Age=3600; SameSite=Strict; Secure`;
-
+		console.log(token);
+		const cookie = `token=${token}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax;`;
+		console.log(cookie);
 		const { password: _, ...safeUser } = user;
 		return new Response(
 			JSON.stringify({ message: "Login successful", data: safeUser }),
@@ -60,15 +63,18 @@ export async function login(req: Request) {
 
 export async function getUser(req: Request) {
 	const { unauthorizedResponse, decodedUser } = await authMiddleware(req);
-	console.log(unauthorizedResponse, decodedUser);
-	if (unauthorizedResponse) return unauthorizedResponse;
-
+	console.log("DECODED", decodedUser);
+	if (unauthorizedResponse) {
+		return unauthorizedResponse;
+	} else {
+		console.log("somethig is true");
+	}
 	const decoded = decodedUser as { username: string };
-	console.log(decoded);
 	const user = await usersCollection().findOne(
 		{ username: decoded.username },
 		{ projection: { password: 0 } }
 	);
+	console.log("user", user);
 	if (!user) {
 		return new Response(JSON.stringify({ message: "User not found" }), {
 			status: 404,
