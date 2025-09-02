@@ -53,7 +53,6 @@ async function fetchUserApi(): Promise<User | null> {
 	return data;
 }
 
-// API call to log in
 async function loginApi(credentials: LoginCredentials): Promise<User> {
 	const res = await fetch(`/api/userlogin`, {
 		method: "POST",
@@ -73,9 +72,8 @@ async function loginApi(credentials: LoginCredentials): Promise<User> {
 	return json.data;
 }
 
-// API call to log out
 async function logoutApi(): Promise<void> {
-	await fetch(`/api/auth/logout`, {
+	await fetch(`/api/userlogout`, {
 		method: "POST",
 		credentials: "include",
 	});

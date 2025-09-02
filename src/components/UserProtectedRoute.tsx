@@ -1,13 +1,50 @@
-import { Navigate, Outlet } from "react-router";
+import { Navigate, Outlet, useLocation } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
+import { useEffect, useState } from "react";
 
 const UserProtectedRoute = () => {
 	const { user, isLoading } = useUserAuth();
+	const location = useLocation();
 
-	if (isLoading) {
+	const [isChecking, setIsChecking] = useState(true);
+	const [completed, setCompleted] = useState(false);
+
+	useEffect(() => {
+		const verifySession = async () => {
+			if (!user) {
+				setCompleted(false);
+				setIsChecking(false);
+				return;
+			}
+
+			try {
+				const res = await fetch("/api/check-session", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ userId: user._id, quizId: user.quizId }),
+				});
+
+				if (res.ok) {
+					const data = await res.json();
+					setCompleted(!!data.completed);
+				} else {
+					setCompleted(false);
+				}
+			} catch (err) {
+				console.error("Session check failed", err);
+				setCompleted(false);
+			} finally {
+				setIsChecking(false);
+			}
+		};
+
+		verifySession();
+	}, [user, location.pathname]);
+
+	if (isLoading || isChecking) {
 		return (
-			<div className="flex items-center justify-center h-screen">
-				<p className="text-lg font-semibold">Loading...</p>
+			<div className="w-full flex items-center justify-center h-screen">
+				<div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
 			</div>
 		);
 	}
@@ -15,6 +52,20 @@ const UserProtectedRoute = () => {
 	if (!user) {
 		return <Navigate to="/user-login" replace />;
 	}
+
+	// 2. Protect /test route
+	if (location.pathname === "/test") {
+		if (!completed) {
+			// quiz not completed → redirect to quiz
+			return <Navigate to="/" replace />;
+		}
+	}
+
+	// 3. After completing quiz, prevent returning to quiz (redirect to test)
+	if (location.pathname === "/" && completed) {
+		return <Navigate to="/test" replace />;
+	}
+
 	return <Outlet />;
 };
 

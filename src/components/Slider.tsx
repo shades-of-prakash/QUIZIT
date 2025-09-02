@@ -5,10 +5,9 @@ interface SliderProps {
 	total: number;
 	active: number;
 	setActive: (index: number) => void;
-	selectedOptions: { [key: number]: string[] };
+	selectedOptions: { [key: number]: number[] };
 	skippedQuestions: Set<number>;
 }
-
 const Slider: React.FC<SliderProps> = ({
 	total,
 	active,

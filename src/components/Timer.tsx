@@ -1,94 +1,98 @@
 import React, { useEffect, useState } from "react";
 import { Timer as TimerIcon } from "lucide-react";
 
-interface TimerProps {
-  userId: string;
-  onTimeUp?: () => void;
-}
+type TimerProps = {
+	userId: string;
+	quizId: string;
+	onTimeUp: () => void;
+};
 
-const Timer: React.FC<TimerProps> = ({ userId, onTimeUp }) => {
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0); 
+const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
+	const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  useEffect(() => {
-    const syncTime = async () => {
-      try {
-        const [serverRes, endTimeRes] = await Promise.all([
-          fetch("/api/server-time"),
-          fetch(`/api/quiz-end-time?userId=${userId}`),
-        ]);
-        const serverData = await serverRes.json();
-        const endTimeData = await endTimeRes.json();
+	useEffect(() => {
+		const initTimer = async () => {
+			try {
+				// fetch server time + quiz end time
+				const [serverRes, endTimeRes] = await Promise.all([
+					fetch("/api/server-time"),
+					fetch(`/api/quiz-end-time?userId=${userId}&quizId=${quizId}`),
+				]);
 
-        const clientNow = Date.now();
-        const serverNow = serverData.serverTime;
-        const offset = serverNow - clientNow; 
+				const serverData = await serverRes.json();
+				const endTimeData = await endTimeRes.json();
 
-        setServerTimeOffset(offset);
+				if (!endTimeData.endTime) {
+					console.error("No endTime returned from server");
+					return;
+				}
 
-        const remainingSeconds = Math.floor((endTimeData.endTime - serverNow) / 1000);
-        setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
-      } catch (error) {
-        console.error("Failed to sync time", error);
-      }
-    };
+				const remainingSeconds = Math.floor(
+					(endTimeData.endTime - serverData.serverTime) / 1000
+				);
 
-    syncTime();
-  }, [userId]);
+				setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+			} catch (error) {
+				console.error("Failed to init timer", error);
+			}
+		};
 
-  useEffect(() => {
-    if (timeLeft === null) return;
-    if (timeLeft <= 0) {
-      if (onTimeUp) onTimeUp();
-      return;
-    }
+		initTimer();
+	}, [userId, quizId]);
 
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (onTimeUp) onTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+	useEffect(() => {
+		if (timeLeft === null) return;
+		if (timeLeft <= 0) {
+			onTimeUp?.();
+			return;
+		}
 
-    return () => clearInterval(interval);
-  }, [timeLeft, onTimeUp]);
+		const interval = setInterval(() => {
+			setTimeLeft((prev) => {
+				if (prev === null) return null;
+				if (prev <= 1) {
+					clearInterval(interval);
+					onTimeUp?.();
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1000);
 
-  if (timeLeft === null) return <div>Loading timer...</div>;
+		return () => clearInterval(interval);
+	}, [timeLeft, onTimeUp]);
 
-  const hrs = Math.floor(timeLeft / 3600);
-  const mins = Math.floor((timeLeft % 3600) / 60);
-  const secs = timeLeft % 60;
+	if (timeLeft === null) return <div>Loading timer...</div>;
 
-  return (
-    <div className="text-2xl font-bold flex items-center justify-center gap-3">
-      <TimerIcon size={36} className="text-accent transition-transform duration-200 hover:scale-110" />
-      <div className="flex flex-col text-sm">
-        <span>Time</span>
-        <span>Left:</span>
-      </div>
-      <div className="w-[150px] flex items-center justify-center p-2 text-sm gap-2 bg-neutral-100 border border-neutral-300 rounded-md">
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-xl leading-4">{hrs.toString().padStart(2, "0")}</span>
-          <span className="text-[10px] font-light">hrs</span>
-        </div>
-        <div>:</div>
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-xl leading-4">{mins.toString().padStart(2, "0")}</span>
-          <span className="text-[10px] font-light">min</span>
-        </div>
-        <div>:</div>
-        <div className="flex flex-col items-center justify-center">
-          <span className="text-xl leading-4">{secs.toString().padStart(2, "0")}</span>
-          <span className="text-[10px] font-light">sec</span>
-        </div>
-      </div>
-    </div>
-  );
+	const hrs = Math.floor(timeLeft / 3600);
+	const mins = Math.floor((timeLeft % 3600) / 60);
+	const secs = timeLeft % 60;
+
+	return (
+		<div className="text-2xl font-bold flex items-center justify-center gap-3">
+			<TimerIcon size={36} className="text-accent" />
+			<div className="flex flex-col text-sm">
+				<span>Time</span>
+				<span>Left:</span>
+			</div>
+			<div className="w-[150px] flex items-center justify-center p-2 text-sm gap-2 bg-neutral-100 border border-neutral-300 rounded-md">
+				<div className="flex flex-col items-center">
+					<span className="text-xl">{hrs.toString().padStart(2, "0")}</span>
+					<span className="text-[10px] font-light">hrs</span>
+				</div>
+				<div>:</div>
+				<div className="flex flex-col items-center">
+					<span className="text-xl">{mins.toString().padStart(2, "0")}</span>
+					<span className="text-[10px] font-light">min</span>
+				</div>
+				<div>:</div>
+				<div className="flex flex-col items-center">
+					<span className="text-xl">{secs.toString().padStart(2, "0")}</span>
+					<span className="text-[10px] font-light">sec</span>
+				</div>
+			</div>
+		</div>
+	);
 };
 
 export default Timer;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner"; // make sure sonner is installed
+import { toast } from "sonner";
 
 interface CreateUsersProps {
 	quizId: string;
@@ -31,6 +31,25 @@ const createQuizUsers = async ({
 	return data;
 };
 
+const downloadCSV = (
+	users: { username: string; password: string }[],
+	quizName: string
+) => {
+	const header = "Username,Password\n";
+	const rows = users.map((u) => `${u.username},${u.password}`).join("\n");
+	const csv = header + rows;
+
+	const blob = new Blob([csv], { type: "text/csv" });
+	const url = URL.createObjectURL(blob);
+
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = `${quizName}-users.csv`;
+	link.click();
+
+	URL.revokeObjectURL(url);
+};
+
 const CreateUsers: React.FC<CreateUsersProps> = ({
 	quizId,
 	quizName,
@@ -38,13 +57,15 @@ const CreateUsers: React.FC<CreateUsersProps> = ({
 }) => {
 	const [numUsers, setNumUsers] = useState<number | "">("");
 	const [error, setError] = useState<string>("");
+	const [createdUsers, setCreatedUsers] = useState<
+		{ username: string; password: string }[] | null
+	>(null);
 
 	const mutation = useMutation({
 		mutationFn: createQuizUsers,
 		onSuccess: (data) => {
 			toast.success("Users created successfully!");
-			console.log("Created users:", data.users);
-			onClose();
+			setCreatedUsers(data.users);
 		},
 		onError: (err: any) => {
 			setError(err.message || "Something went wrong");
@@ -78,6 +99,7 @@ const CreateUsers: React.FC<CreateUsersProps> = ({
 			setError("Number of users cannot exceed 5000.");
 			return;
 		}
+		setCreatedUsers(null); // reset download
 		mutation.mutate({ quizId, count: numUsers });
 	};
 
@@ -118,15 +140,18 @@ const CreateUsers: React.FC<CreateUsersProps> = ({
 					/>
 					{error && <p className="text-red-600 text-sm">{error}</p>}
 				</div>
-				<div className="flex flex-col gap-2">
-					{mutation.isPending && (
-						<p className="text-red-400 font-medium text-sm">
-							Please wait, generating users
-						</p>
-					)}
+
+				{createdUsers && (
+					<p className="text-green-600 font-medium text-sm">
+						✅ Successfully created {createdUsers.length} users
+					</p>
+				)}
+
+				<div className="flex items-center gap-2 justify-end">
+					{/* Generate Button */}
 					<button
 						onClick={handleGenerate}
-						className={`px-4 py-2 self-end rounded-md text-white transition flex items-center justify-center gap-2 ${
+						className={`px-4 py-2 rounded-md text-white transition flex items-center justify-center gap-2 ${
 							mutation.isPending
 								? "bg-gray-500 cursor-not-allowed"
 								: "bg-neutral-800 hover:bg-neutral-900"
@@ -160,6 +185,25 @@ const CreateUsers: React.FC<CreateUsersProps> = ({
 						) : (
 							"Generate"
 						)}
+					</button>
+
+					<button
+						onClick={() => {
+							if (createdUsers) {
+								downloadCSV(createdUsers, quizName);
+								// setTimeout(() => {
+								// 	onClose();
+								// }, 5000);
+							}
+						}}
+						disabled={!createdUsers}
+						className={`px-4 font-bold py-2 rounded-md  transition ${
+							createdUsers
+								? "bg-accent text-black hover:bg-[#abff6b]"
+								: "bg-gray-200 border border-neutral-400 text-black cursor-not-allowed"
+						}`}
+					>
+						Download CSV
 					</button>
 				</div>
 			</div>

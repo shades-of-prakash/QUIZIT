@@ -15,6 +15,7 @@ import { UserAuthProvider } from "./context/userAuthContext";
 import UserProtectedRoute from "./components/UserProtectedRoute";
 import Instructions from "./components/Instructions";
 import Redirect from "./components/Redirect";
+import Test from "./components/Test";
 const queryClient = new QueryClient();
 const Noise = () => {
 	return (
@@ -53,12 +54,12 @@ export function App() {
 			<AuthProvider>
 				<UserAuthProvider>
 					<BrowserRouter>
-						<Toaster position="top-center" />
+						<Toaster position="top-center" richColors />
 						<Routes>
-							<Route element={<UserProtectedRoute/>}>
-								<Route path="/instructions" element={<Instructions/>}/>
+							<Route element={<UserProtectedRoute />}>
+								<Route path="/instructions" element={<Instructions />} />
 							</Route>
-							
+
 							<Route
 								path="/user-login"
 								element={
@@ -67,9 +68,9 @@ export function App() {
 									</Redirect>
 								}
 							/>
-
 							<Route element={<UserProtectedRoute />}>
 								<Route path="/" element={<Quiz />} />
+								<Route path="/test" element={<Test />} />
 							</Route>
 							<Route path="/admin-login" element={<AdminLogin />} />
 

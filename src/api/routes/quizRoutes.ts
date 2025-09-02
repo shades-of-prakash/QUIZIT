@@ -5,8 +5,12 @@ import {
 	getQuizNames,
 	getServerTimeController,
 	getSingleQuiz,
-	startQuizController,
-	getQuizEndTimeController
+	getQuizEndTimeController,
+	createQuizSessionController,
+	submitQuizController,
+	checkSessionController,
+	getQuizResultsController,
+	deleteQuizController,
 } from "../controllers/quizController";
 
 export const quizRoutes = {
@@ -25,14 +29,26 @@ export const quizRoutes = {
 	"/api/quiznames": {
 		GET: getQuizNames,
 	},
-	
-	"/api/server-time":{
-		GET:getServerTimeController
+
+	"/api/server-time": {
+		GET: getServerTimeController,
 	},
 	"/api/quiz-end-time": {
 		GET: getQuizEndTimeController,
 	},
-	"/api/start-quiz": {
-		POST: startQuizController,
-	}
+	"/api/quiz-session": {
+		POST: createQuizSessionController,
+	},
+	"/api/submit-quiz": {
+		POST: submitQuizController,
+	},
+	"/api/check-session": {
+		POST: checkSessionController,
+	},
+	"/api/results": {
+		GET: getQuizResultsController,
+	},
+	"/api/deletequiz": {
+		GET: deleteQuizController,
+	},
 };

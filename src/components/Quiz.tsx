@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Slider from "./Slider";
 import Timer from "./Timer";
 import parse from "html-react-parser";
@@ -9,6 +9,8 @@ import "prismjs/components/prism-sql";
 import "prismjs/components/prism-java";
 import "prismjs/components/prism-c";
 import { useUserAuth } from "../context/userAuthContext";
+import { useNavigate } from "react-router";
+import { toast } from "sonner"; // ✅ import sonner
 
 type Question = {
 	sno: string;
@@ -19,172 +21,203 @@ type Question = {
 
 const Quiz: React.FC = () => {
 	const { user } = useUserAuth();
+	const navigate = useNavigate();
+	const [submitting, setSubmitting] = useState(false);
+	const [submitted, setSubmitted] = useState(false);
 
 	const [questions, setQuestions] = useState<Question[]>([]);
-	const [activeQuestion, setActiveQuestion] = useState<number>(0);
-	const [selectedOptions, setSelectedOptions] = useState<{
-		[key: number]: string[];
-	}>({});
+	const [activeQuestion, setActiveQuestion] = useState(0);
+	const [selectedOptions, setSelectedOptions] = useState<
+		Record<number, number[]>
+	>({});
 	const [skippedQuestions, setSkippedQuestions] = useState<Set<number>>(
 		new Set()
 	);
-
-	const handleTimeUp = () => {
-		console.log("⏰ Time’s up! Auto-submitting...");
-		alert("Time is up! Your answers are being submitted.");
-	};
 
 	const STORAGE_KEY = `quiz_answers_${user?.quizId || "default"}`;
 	const ACTIVE_KEY = `quiz_active_${user?.quizId || "default"}`;
 	const SKIPPED_KEY = `quiz_skipped_${user?.quizId || "default"}`;
 
+	/* ---------------- TIMER ---------------- */
+	const handleTimeUp = () => {
+		toast.warning("⏰ Time is up! Auto-submitting your answers."); // ✅ replaced alert
+		handleSubmit();
+	};
+
+	/* ---------------- SUBMIT ---------------- */
+	const handleSubmit = async () => {
+		if (submitting || submitted) return; // 🚫 block multiple submits
+
+		if (!user || !user.quizId) {
+			toast.error("❌ User or quiz not found!");
+			return;
+		}
+
+		setSubmitting(true);
+
+		const payload = {
+			participant1: user.participant1,
+			participant2: user.participant2,
+			email: user.email,
+			userId: user._id,
+			quizId: user.quizId,
+			answers: selectedOptions,
+		};
+
+		try {
+			const res = await fetch("/api/submit-quiz", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(payload),
+				credentials: "include",
+			});
+
+			if (!res.ok) throw new Error("Failed to submit quiz");
+			await res.json();
+
+			// cleanup
+			localStorage.removeItem(STORAGE_KEY);
+			localStorage.removeItem(ACTIVE_KEY);
+			localStorage.removeItem(SKIPPED_KEY);
+
+			setSubmitted(true); // ✅ mark as submitted
+			toast.success("✅ Quiz submitted successfully!");
+			navigate("/test");
+		} catch (err) {
+			console.error("❌ Error submitting quiz:", err);
+			toast.error("Failed to submit quiz. Please try again.");
+			setSubmitting(false); // allow retry
+		}
+	};
+
+	/* ---------------- RESTORE STATE ---------------- */
 	useEffect(() => {
-		const savedAnswers = localStorage.getItem(STORAGE_KEY);
-		if (savedAnswers) {
-			try {
-				setSelectedOptions(JSON.parse(savedAnswers));
-			} catch (e) {
-				console.error("Failed to parse saved answers", e);
-			}
-		}
+		try {
+			const savedAnswers = localStorage.getItem(STORAGE_KEY);
+			if (savedAnswers) setSelectedOptions(JSON.parse(savedAnswers));
 
-		const savedActive = localStorage.getItem(ACTIVE_KEY);
-		if (savedActive) {
-			setActiveQuestion(Number(savedActive));
-		}
+			const savedActive = localStorage.getItem(ACTIVE_KEY);
+			if (savedActive) setActiveQuestion(Number(savedActive));
 
-		const savedSkipped = localStorage.getItem(SKIPPED_KEY);
-		if (savedSkipped) {
-			try {
-				setSkippedQuestions(new Set(JSON.parse(savedSkipped)));
-			} catch (e) {
-				console.error("Failed to parse skipped questions", e);
-			}
+			const savedSkipped = localStorage.getItem(SKIPPED_KEY);
+			if (savedSkipped) setSkippedQuestions(new Set(JSON.parse(savedSkipped)));
+		} catch (e) {
+			console.error("❌ Failed to restore quiz state", e);
+			toast.error("Failed to restore quiz state");
 		}
 	}, [STORAGE_KEY, ACTIVE_KEY, SKIPPED_KEY]);
 
+	/* ---------------- PERSIST STATE ---------------- */
 	useEffect(() => {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedOptions));
-	}, [selectedOptions, STORAGE_KEY]);
+	}, [selectedOptions]);
 
 	useEffect(() => {
 		localStorage.setItem(ACTIVE_KEY, String(activeQuestion));
-	}, [activeQuestion, ACTIVE_KEY]);
+	}, [activeQuestion]);
 
 	useEffect(() => {
 		localStorage.setItem(SKIPPED_KEY, JSON.stringify([...skippedQuestions]));
-	}, [skippedQuestions, SKIPPED_KEY]);
+	}, [skippedQuestions]);
 
+	/* ---------------- FETCH QUIZ ---------------- */
 	useEffect(() => {
-		const getQuizData = async (quizId: string) => {
-			const response = await fetch("/api/quizdetails", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ quizId }),
-			});
-
-			if (!response.ok) {
-				console.error("Failed to fetch quiz");
+		const fetchQuiz = async (quizId: string) => {
+			try {
+				const response = await fetch("/api/quizdetails", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ quizId }),
+				});
+				if (!response.ok) throw new Error("Failed to fetch quiz");
+				return response.json();
+			} catch (err) {
+				console.error("❌ Error fetching quiz:", err);
+				toast.error("Failed to load quiz. Please refresh.");
 				return null;
 			}
-
-			const data = await response.json();
-			return data;
 		};
 
-		if (user && user.quizId) {
-			(async () => {
-				const data = await getQuizData(user.quizId);
-				if (data?.questions) {
-					setQuestions(data.questions);
-				}
-			})();
+		if (user?.quizId) {
+			fetchQuiz(user.quizId).then((data) => {
+				if (data?.questions) setQuestions(data.questions);
+			});
 		}
 	}, [user]);
 
+	/* ---------------- PRISM HIGHLIGHT ---------------- */
 	useEffect(() => {
-		Prism.highlightAll();
+		if (questions.length > 0) Prism.highlightAll();
 	}, [activeQuestion, questions]);
 
-	const enterFullScreen = () => {
-        const docEl = document.documentElement as any; 
+	/* ---------------- FULLSCREEN ---------------- */
+	useEffect(() => {
+		const docEl: any = document.documentElement;
+		if (docEl.requestFullscreen) docEl.requestFullscreen();
+	}, []);
 
-        if (docEl.requestFullscreen) {
-            docEl.requestFullscreen();
-        } else if (docEl.mozRequestFullScreen) {
-            docEl.mozRequestFullScreen();
-        } else if (docEl.webkitRequestFullscreen) {
-            docEl.webkitRequestFullscreen();  
-        } else if (docEl.msRequestFullscreen) {
-            docEl.msRequestFullscreen(); 
-        }
-    };
+	/* ---------------- OPTION SELECT ---------------- */
+	const handleOptionChange = useCallback(
+		(optionIndex: number) => {
+			setSelectedOptions((prev) => {
+				const isMultiple = questions[activeQuestion]?.multiple ?? false;
+				const prevOptions = prev[activeQuestion] || [];
 
-   
-    useEffect(() => {
-        enterFullScreen();
-    }, []);
-
-
-	const handleOptionChange = (option: string) => {
-		setSelectedOptions((prev) => {
-			const isMultiple = questions[activeQuestion]?.multiple ?? false;
-			const prevOptions = prev[activeQuestion] || [];
-
-			let updatedOptions: string[];
-			if (isMultiple) {
-				updatedOptions = prevOptions.includes(option)
-					? prevOptions.filter((o) => o !== option)
-					: [...prevOptions, option];
-			} else {
-				updatedOptions = [option];
-			}
-
-			const newSelected = { ...prev, [activeQuestion]: updatedOptions };
-
-			setSkippedQuestions((prevSkipped) => {
-				const newSkipped = new Set(prevSkipped);
-				if (updatedOptions.length > 0) {
-					newSkipped.delete(activeQuestion);
+				let updated: number[];
+				if (isMultiple) {
+					updated = prevOptions.includes(optionIndex)
+						? prevOptions.filter((i) => i !== optionIndex)
+						: [...prevOptions, optionIndex];
+				} else {
+					updated = [optionIndex];
 				}
-				return newSkipped;
+
+				const newSelected = { ...prev, [activeQuestion]: updated };
+
+				setSkippedQuestions((prevSkipped) => {
+					const newSkipped = new Set(prevSkipped);
+					if (updated.length > 0) newSkipped.delete(activeQuestion);
+					return newSkipped;
+				});
+
+				return newSelected;
 			});
+		},
+		[activeQuestion, questions]
+	);
 
-			return newSelected;
-		});
-	};
+	/* ---------------- SKIP TRACKING ---------------- */
+	const markSkippedIfNeeded = useCallback(
+		(index: number) => {
+			if (!selectedOptions[index]?.length) {
+				setSkippedQuestions((prev) => new Set(prev).add(index));
+			} else {
+				setSkippedQuestions((prev) => {
+					const newSkipped = new Set(prev);
+					newSkipped.delete(index);
+					return newSkipped;
+				});
+			}
+		},
+		[selectedOptions]
+	);
 
-	const markSkippedIfNeeded = (currentIndex: number) => {
-		if (!selectedOptions[currentIndex]?.length) {
-			setSkippedQuestions((prev) => new Set(prev).add(currentIndex));
-		} else {
-			setSkippedQuestions((prev) => {
-				const newSkipped = new Set(prev);
-				newSkipped.delete(currentIndex);
-				return newSkipped;
-			});
-		}
-	};
-
+	/* ---------------- NAVIGATION ---------------- */
 	const handleNext = () => {
 		markSkippedIfNeeded(activeQuestion);
-		if (activeQuestion < questions.length - 1) {
+		if (activeQuestion < questions.length - 1)
 			setActiveQuestion(activeQuestion + 1);
-		}
 	};
-
 	const handlePrevious = () => {
 		markSkippedIfNeeded(activeQuestion);
-		if (activeQuestion > 0) {
-			setActiveQuestion(activeQuestion - 1);
-		}
+		if (activeQuestion > 0) setActiveQuestion(activeQuestion - 1);
 	};
-
-	const handleSetActive = (index: number) => {
+	const handleSetActive = (i: number) => {
 		markSkippedIfNeeded(activeQuestion);
-		setActiveQuestion(index);
+		setActiveQuestion(i);
 	};
 
+	/* ---------------- RENDER ---------------- */
 	if (questions.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-screen">
@@ -214,15 +247,24 @@ const Quiz: React.FC = () => {
 						skippedQuestions={skippedQuestions}
 					/>
 				</div>
-				<div className="h-15  flex-shrink-0 flex items-center justify-between gap-4">
-					<div className="text-2xl font-bold flex items-center justify-center gap-3">
-						<Timer
-							duration={Number(user?.quizDuration ?? 0)}
-							onTimeUp={handleTimeUp}
-						/>
-					</div>
-					<button className="px-5 py-2 bg-red-800 text-white rounded-md">
-						Submit
+				<div className="h-15 flex-shrink-0 flex items-center gap-4">
+					<Timer
+						userId={user?._id ?? ""}
+						quizId={user?.quizId ?? ""}
+						onTimeUp={handleTimeUp}
+					/>
+					<button
+						onClick={handleSubmit}
+						disabled={submitting || submitted}
+						className={`px-5 py-2 rounded-md text-white ${
+							submitted
+								? "bg-gray-500 cursor-not-allowed"
+								: submitting
+								? "bg-red-400 cursor-wait"
+								: "bg-red-800 hover:bg-red-900"
+						}`}
+					>
+						{submitted ? "Submitted" : submitting ? "Submitting..." : "Submit"}
 					</button>
 				</div>
 			</div>
@@ -231,45 +273,45 @@ const Quiz: React.FC = () => {
 			<div className="w-full flex flex-1 px-4">
 				<div className="flex w-full h-[600px] border border-neutral-800/20 rounded-md overflow-hidden">
 					{/* QUESTION */}
-					<div className="w-1/2 h-full bg-neutral-50 p-10 flex flex-col gap-4">
+					<div className="w-1/2 bg-neutral-50 p-10 flex flex-col gap-4">
 						<span className="font-semibold">Question {activeQuestion + 1}</span>
-						<div className="w-full font-semibold overflow-hidden">
+						<div className="font-semibold overflow-hidden">
 							{parse(questions[activeQuestion]?.question ?? "")}
 						</div>
 					</div>
 
 					{/* OPTIONS */}
-					<div className="w-1/2 flex flex-col h-full p-10 gap-3">
+					<div className="w-1/2 flex flex-col p-10 gap-3">
 						<span className="font-semibold">Answer</span>
 						<div className="flex flex-col gap-6">
-							{questions[activeQuestion]?.options?.map((option, index) => {
-								const id = `quiz-option-${activeQuestion}-${index}`;
+							{questions[activeQuestion]?.options.map((opt, i) => {
 								const isChecked =
-									selectedOptions[activeQuestion]?.includes(option) || false;
+									selectedOptions[activeQuestion]?.includes(i) || false;
 								const isMultiple = questions[activeQuestion]?.multiple ?? false;
+								const id = `quiz-${activeQuestion}-${i}`;
 
 								return (
 									<div
-										key={option}
+										key={i}
 										className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer ${
 											isChecked ? "!border-black" : ""
 										}`}
-										onClick={() => handleOptionChange(option)}
+										onClick={() => handleOptionChange(i)}
 									>
 										<input
 											type={isMultiple ? "checkbox" : "radio"}
 											id={id}
-											name={`quiz-option-${activeQuestion}`}
+											name={`quiz-${activeQuestion}`}
 											className="w-5 h-5 accent-black rounded focus:ring-0 focus:border-black"
 											checked={isChecked}
-											onChange={() => handleOptionChange(option)}
+											onChange={() => handleOptionChange(i)}
 											onClick={(e) => e.stopPropagation()}
 										/>
 										<label
 											htmlFor={id}
 											className="text-neutral-800 select-none cursor-pointer"
 										>
-											{option}
+											{opt}
 										</label>
 									</div>
 								);
@@ -280,7 +322,7 @@ const Quiz: React.FC = () => {
 			</div>
 
 			{/* FOOTER NAV */}
-			<div className="w-full flex items-center justify-end mb-10 gap-3 px-4 py-2 select-none">
+			<div className="w-full flex justify-end mb-10 gap-3 px-4 py-2">
 				<button
 					onClick={handlePrevious}
 					disabled={activeQuestion === 0}
