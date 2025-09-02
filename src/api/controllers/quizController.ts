@@ -35,7 +35,7 @@ export async function createQuiz(req: Request) {
 
 	try {
 		const body = await req.json();
-		const { name, duration, quizQuestions, totalQuestions, questions } = body;
+		const { name, duration, quizQuestions, totalQuestions, teamSize, questions } = body;
 
 		if (
 			!name ||
@@ -43,7 +43,8 @@ export async function createQuiz(req: Request) {
 			questions.length === 0 ||
 			!duration ||
 			!quizQuestions ||
-			!totalQuestions
+			!totalQuestions ||
+			!teamSize
 		) {
 			return new Response(
 				JSON.stringify({
@@ -53,6 +54,7 @@ export async function createQuiz(req: Request) {
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
+		
 		if (quizQuestions > totalQuestions) {
 			return new Response(
 				JSON.stringify({
@@ -62,10 +64,11 @@ export async function createQuiz(req: Request) {
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
-		// Validate numeric fields
+		
 		const durationNum = parseInt(duration);
 		const quizQuestionsNum = parseInt(quizQuestions);
 		const totalQuestionsNum = parseInt(totalQuestions);
+		const teamSizeNum = parseInt(teamSize);
 
 		if (
 			isNaN(durationNum) ||
@@ -73,19 +76,30 @@ export async function createQuiz(req: Request) {
 			isNaN(quizQuestionsNum) ||
 			quizQuestionsNum <= 0 ||
 			isNaN(totalQuestionsNum) ||
-			totalQuestionsNum <= 0
+			totalQuestionsNum <= 0 ||
+			isNaN(teamSizeNum) ||
+			teamSizeNum <= 0
 		) {
 			return new Response(
 				JSON.stringify({
 					success: false,
 					message:
-						"Duration, quizQuestions, and totalQuestions must be positive numbers",
+						"Duration, quizQuestions, totalQuestions, and teamSize must be positive numbers",
 				}),
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		// Validate each question
+		if (teamSizeNum !== 1 && teamSizeNum !== 2) {
+			return new Response(
+				JSON.stringify({
+					success: false,
+					message: "Team size must be either 1 (Individual) or 2 (Dual)",
+				}),
+				{ status: 400, headers: { "Content-Type": "application/json" } }
+			);
+		}
+
 		for (const question of questions) {
 			if (
 				!question.sno ||
@@ -106,12 +120,12 @@ export async function createQuiz(req: Request) {
 			}
 		}
 
-		// Insert into DB
 		const quizDoc = {
 			name,
 			duration: durationNum,
 			quizQuestions: quizQuestionsNum,
 			totalQuestions: totalQuestionsNum,
+			teamSize: teamSizeNum,
 			questions,
 			createdAt: new Date(),
 		};

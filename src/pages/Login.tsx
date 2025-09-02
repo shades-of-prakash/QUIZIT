@@ -10,8 +10,12 @@ const Login: React.FC = () => {
 	const { login, loginMutationIsLoading, loginMutationError } = useUserAuth();
 
 	const [formData, setFormData] = useState({
-		participant1: "",
-		participant2: "",
+		participant1Name: "",
+		participant1RollNo: "",
+		participant2Name: "",
+		participant2RollNo: "",
+		collegeName: "",
+		phoneNumber: "",
 		email: "",
 		username: "",
 		password: "",
@@ -36,8 +40,12 @@ const Login: React.FC = () => {
 				password: formData.password,
 				quizId: formData.quizId,
 				email: formData.email,
-				participant1: formData.participant1,
-				participant2: formData.participant2,
+				participant1Name: formData.participant1Name,
+				participant1RollNo: formData.participant1RollNo,
+				participant2Name: formData.participant2Name,
+				participant2RollNo: formData.participant2RollNo,
+				collegeName: formData.collegeName,
+				phoneNumber: formData.phoneNumber,
 			});
 			navigate(`/`);
 		} catch (error) {
@@ -46,48 +54,108 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="w-screen h-dvh bg-white flex">
-			<div className="w-1/2 h-full flex items-center justify-center">
-				<img src={loginImage} alt="login-image" />
+		<div className="w-screen h-dvh flex gap-2">
+			<div className="w-1/2 h-full bg-white flex items-center justify-center">
+				<img src={loginImage} alt="login-image" className="w-full h-full" />
 			</div>
-			<div className="w-1/2 h-full p-10">
-				<div className="p-5 xl:py-5 xl:px-8 flex flex-col gap-2 items-center w-full h-full border border-black rounded-xl">
-					<h1 className="text-4xl lg:text-xl font-bold text-center">QUIZIT</h1>
-					<span className="text-sm text-neutral-800">
-						Powered by RVR&JC Information Technology.
-					</span>
+			<div className="w-1/2 h-full border border-neutral-800">
+				<div className="px-20 py-5 flex flex-col gap-3 justify-center items-center w-full h-full rounded-xl">
+					<div>
+						<h1 className="text-xl font-bold text-center">QUIZIT</h1>
+						<span className="text-sm text-neutral-800">
+							Powered by RVR&JC Information Technology.
+						</span>
+					</div>
 
-					<form
-						onSubmit={handleSubmit}
-						className="mt-4 lg:gap-3 xl:gap-4 w-full flex flex-col"
-					>
-						<div className="w-full gap-1 flex">
+					<div className="w-full flex flex-col gap-3">
+						{/* Participant 1 Details */}
+						<div className="w-full gap-3 flex">
 							<div className="w-1/2 flex flex-col gap-2">
 								<label className="text-sm text-neutral-800">
-									Participant 1
+									Participant 1 Name
 								</label>
 								<input
 									type="text"
-									name="participant1"
+									name="participant1Name"
 									required
-									value={formData.participant1}
+									value={formData.participant1Name}
 									onChange={handleChange}
-									className="lg:p-2 xl:p-3 border border-neutral-800 rounded-md"
+									className="py-1 px-2 border border-neutral-800 rounded-md"
+									placeholder="Enter name"
 								/>
 							</div>
 							<div className="w-1/2 flex flex-col gap-2">
 								<label className="text-sm text-neutral-800">
-									Participant 2
+									Participant 1 Roll No
 								</label>
 								<input
 									type="text"
-									name="participant2"
+									name="participant1RollNo"
 									required
-									value={formData.participant2}
+									value={formData.participant1RollNo}
 									onChange={handleChange}
-									className="lg:p-2 xl:p-3 border border-neutral-800 rounded-md"
+									className="py-1 px-2 border border-neutral-800 rounded-md"
+									placeholder="Enter roll number"
 								/>
 							</div>
+						</div>
+
+						{/* Participant 2 Details */}
+						<div className="w-full gap-3 flex">
+							<div className="w-1/2 flex flex-col gap-2">
+								<label className="text-sm text-neutral-800">
+									Participant 2 Name
+								</label>
+								<input
+									type="text"
+									name="participant2Name"
+									value={formData.participant2Name}
+									onChange={handleChange}
+									className="py-1 px-2 border border-neutral-800 rounded-md"
+									placeholder="Enter name (optional)"
+								/>
+							</div>
+							<div className="w-1/2 flex flex-col gap-2">
+								<label className="text-sm text-neutral-800">
+									Participant 2 Roll No
+								</label>
+								<input
+									type="text"
+									name="participant2RollNo"
+									value={formData.participant2RollNo}
+									onChange={handleChange}
+									className="py-1 px-2 border border-neutral-800 rounded-md"
+									placeholder="Enter roll number (optional)"
+								/>
+							</div>
+						</div>
+
+						{/* College Name */}
+						<div className="flex flex-col gap-2">
+							<label className="text-sm text-neutral-800">College Name</label>
+							<input
+								type="text"
+								name="collegeName"
+								required
+								value={formData.collegeName}
+								onChange={handleChange}
+								className="py-1 px-2 border border-neutral-800 rounded-md"
+								placeholder="Enter college name"
+							/>
+						</div>
+
+						{/* Phone Number */}
+						<div className="flex flex-col gap-2">
+							<label className="text-sm text-neutral-800">Phone Number</label>
+							<input
+								type="tel"
+								name="phoneNumber"
+								required
+								value={formData.phoneNumber}
+								onChange={handleChange}
+								className="py-1 px-2 border border-neutral-800 rounded-md"
+								placeholder="Enter phone number"
+							/>
 						</div>
 
 						<div className="flex flex-col gap-2">
@@ -98,7 +166,8 @@ const Login: React.FC = () => {
 								required
 								value={formData.email}
 								onChange={handleChange}
-								className="lg:p-2 xl:p-3 border border-neutral-800 rounded-md"
+								className="py-1 px-2 border border-neutral-800 rounded-md"
+								placeholder="Enter email address"
 							/>
 						</div>
 
@@ -110,7 +179,8 @@ const Login: React.FC = () => {
 								required
 								value={formData.username}
 								onChange={handleChange}
-								className="lg:p-2 xl:p-3 border border-neutral-800 rounded-md"
+								className="py-1 px-2 border border-neutral-800 rounded-md"
+								placeholder="Enter username"
 							/>
 						</div>
 
@@ -122,7 +192,8 @@ const Login: React.FC = () => {
 								required
 								value={formData.password}
 								onChange={handleChange}
-								className="lg:p-2 xl:p-3 border border-neutral-800 rounded-md"
+								className="py-1 px-2 border border-neutral-800 rounded-md"
+								placeholder="Enter password"
 							/>
 						</div>
 
@@ -134,7 +205,8 @@ const Login: React.FC = () => {
 						<button
 							type="submit"
 							disabled={loginMutationIsLoading}
-							className="lg:p-2 xl:p-3 mt-4 bg-black text-white rounded-md text-xl disabled:opacity-50"
+							onClick={handleSubmit}
+							className="py-1 mt-4 xl:mt-2 bg-black text-white rounded-md text-xl disabled:opacity-50"
 						>
 							{loginMutationIsLoading ? "Logging in..." : "Continue"}
 						</button>
@@ -144,7 +216,7 @@ const Login: React.FC = () => {
 								{loginMutationError.message || "Login failed"}
 							</p>
 						)}
-					</form>
+					</div>
 				</div>
 			</div>
 		</div>

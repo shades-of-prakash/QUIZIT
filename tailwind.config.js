@@ -6,6 +6,7 @@ export default {
 			colors: {
 				accent: "var(--accent-color)",
 				codebg: "var(--code-bg-color)",
+				accentLight:"var("
 			},
 			screens: {
 				'xs': '420px',      

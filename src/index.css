@@ -11,6 +11,7 @@
 
 :root {
 	--accent-color: rgb(142, 212, 89);
+	--accent-light-color: rgb(154, 231, 95);
 	--coor: #8fd45a6c;
 	--code-bg-color: #27282c;
 }

@@ -56,9 +56,11 @@ export function App() {
 					<BrowserRouter>
 						<Toaster position="top-center" richColors />
 						<Routes>
-							<Route element={<UserProtectedRoute />}>
+							{/* <Route element={<UserProtectedRoute />}>
 								<Route path="/instructions" element={<Instructions />} />
-							</Route>
+							</Route> */}
+							<Route path="/instructions" element={<Instructions />} />
+
 
 							<Route
 								path="/user-login"
