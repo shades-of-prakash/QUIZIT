@@ -8,18 +8,20 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 const usersCollection = () => db!.collection<QuizUser>("quiz-users");
 const quizSessionCollection = () => db!.collection("quiz-session");
 
-// ================= INTERFACE =================
 interface QuizUser {
 	_id: ObjectId;
 	username: string;
 	password: string;
 	quizId: string;
 	email: string;
-	participant1?: string;
-	participant2?: string;
+	participant1Name: string;
+	participant1RollNo: string;
+	participant2Name?: string;
+	participant2RollNo?: string;
+	collegeName: string;
+	phoneNumber: string;
 }
 
-// ================= HELPERS =================
 function generateToken(payload: object) {
 	return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 }
@@ -30,21 +32,34 @@ function hashPassword(password: string) {
 
 export async function userLogin(req: Request) {
 	try {
-		const { username, password, quizId, email, participant1, participant2 } =
-			await req.json();
+		const {
+			username,
+			password,
+			quizId,
+			email,
+			participant1Name,
+			participant1RollNo,
+			participant2Name,
+			participant2RollNo,
+			collegeName,
+			phoneNumber,
+		} = await req.json();
 
+		// ✅ Require participant1, others optional
 		if (
 			!username ||
 			!password ||
 			!quizId ||
 			!email ||
-			!participant1 ||
-			!participant2
+			!participant1Name ||
+			!participant1RollNo ||
+			!collegeName ||
+			!phoneNumber
 		) {
 			return new Response(
 				JSON.stringify({
 					message:
-						"Username, password, quizId, email, participant1 and participant2 required",
+						"Username, password, quizId, email, participant1, rollNo, collegeName and phoneNumber are required",
 				}),
 				{ status: 400 }
 			);
@@ -74,7 +89,6 @@ export async function userLogin(req: Request) {
 			quizId,
 			completed: true,
 		});
-
 		if (completedSession) {
 			return new Response(
 				JSON.stringify({
@@ -84,14 +98,13 @@ export async function userLogin(req: Request) {
 			);
 		}
 
-		// Check if user is already in an active session
+		// Check if user is already in an active
 		const activeSession = await quizSessionCollection().findOne({
 			userId: user._id.toString(),
 			quizId,
 			completed: false,
 			endTime: { $gt: Date.now() },
 		});
-
 		if (activeSession) {
 			return new Response(
 				JSON.stringify({
@@ -102,53 +115,67 @@ export async function userLogin(req: Request) {
 			);
 		}
 
-		// Prevent duplicate participants across different teams
+		const duplicateCheckConditions: any[] = [
+			{ participant1Name },
+			{ participant1RollNo },
+		];
+		if (participant2Name) duplicateCheckConditions.push({ participant2Name });
+		if (participant2RollNo)
+			duplicateCheckConditions.push({ participant2RollNo });
+
 		const existingTeam = await usersCollection().findOne({
 			quizId,
-			$or: [{ participant1 }, { participant2 }],
+			$or: duplicateCheckConditions,
 			_id: { $ne: user._id },
 		});
 
 		if (existingTeam) {
-			const samePair =
-				(existingTeam.participant1 === participant1 &&
-					existingTeam.participant2 === participant2) ||
-				(existingTeam.participant1 === participant2 &&
-					existingTeam.participant2 === participant1);
-
-			if (!samePair) {
-				return new Response(
-					JSON.stringify({
-						message:
-							"Participant already registered in another team for this quiz",
-					}),
-					{ status: 400 }
-				);
-			}
+			return new Response(
+				JSON.stringify({
+					message:
+						"One or more participants are already registered in another team",
+				}),
+				{ status: 400 }
+			);
 		}
 
-		// Update participants + email for this user
 		await usersCollection().updateOne(
 			{ _id: user._id },
-			{ $set: { participant1, participant2, email } }
+			{
+				$set: {
+					participant1Name,
+					participant1RollNo,
+					participant2Name: participant2Name || null,
+					participant2RollNo: participant2RollNo || null,
+					collegeName,
+					phoneNumber,
+					email,
+				},
+			}
 		);
 
-		// Generate JWT token
 		const token = generateToken({
 			username,
 			quizId,
 			email,
-			participant1,
-			participant2,
+			participant1Name,
+			participant1RollNo,
+			participant2Name: participant2Name || null,
+			participant2RollNo: participant2RollNo || null,
+			collegeName,
+			phoneNumber,
 		});
 
 		const cookie = `user_token=${token}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax;`;
 
-		// Return user data without password
 		const { password: _, ...safeUser } = {
 			...user,
-			participant1,
-			participant2,
+			participant1Name,
+			participant1RollNo,
+			participant2Name: participant2Name || null,
+			participant2RollNo: participant2RollNo || null,
+			collegeName,
+			phoneNumber,
 			email,
 		};
 

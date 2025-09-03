@@ -35,7 +35,14 @@ export async function createQuiz(req: Request) {
 
 	try {
 		const body = await req.json();
-		const { name, duration, quizQuestions, totalQuestions, teamSize, questions } = body;
+		const {
+			name,
+			duration,
+			quizQuestions,
+			totalQuestions,
+			teamSize,
+			questions,
+		} = body;
 
 		if (
 			!name ||
@@ -54,7 +61,7 @@ export async function createQuiz(req: Request) {
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
-		
+
 		if (quizQuestions > totalQuestions) {
 			return new Response(
 				JSON.stringify({
@@ -64,7 +71,7 @@ export async function createQuiz(req: Request) {
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
-		
+
 		const durationNum = parseInt(duration);
 		const quizQuestionsNum = parseInt(quizQuestions);
 		const totalQuestionsNum = parseInt(totalQuestions);
@@ -295,12 +302,13 @@ export async function getSingleQuiz(req: Request) {
 export async function getQuizNames(req: Request): Promise<Response> {
 	try {
 		const quizzes = await quizzesCollection()
-			.find({}, { projection: { name: 1 } })
+			.find({}, { projection: { name: 1, teamSize: 1 } })
 			.toArray();
 
 		const quizNames = quizzes.map((q) => ({
 			id: q._id.toString(),
 			name: q.name,
+			teamSize: q.teamSize,
 		}));
 
 		return new Response(JSON.stringify({ success: true, data: quizNames }), {

@@ -1,100 +1,77 @@
-import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-
-interface Option {
-	value: string;
-	label: string;
-}
-
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown } from "lucide-react";
 interface CustomSelectProps {
-	url: string; // API endpoint
-	onChange: (option: Option) => void;
+	value: string;
+	onChange: (value: string) => void;
+	options: { value: string; label: string }[];
+	placeholder?: string;
+	className?: string;
 }
-
-const CustomSelect: React.FC<CustomSelectProps> = ({ url, onChange }) => {
-	const [open, setOpen] = useState(false);
-	const [selected, setSelected] = useState<Option | null>(null);
-	const [options, setOptions] = useState<Option[]>([]);
-	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState(false);
+function CustomSelect({
+	value,
+	onChange,
+	options,
+	placeholder,
+	className = "",
+}: CustomSelectProps) {
+	const [isOpen, setIsOpen] = useState(false);
+	const selectRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		if (open && options.length === 0) {
-			setIsLoading(true);
-			setError(false);
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				selectRef.current &&
+				!selectRef.current.contains(event.target as Node)
+			) {
+				setIsOpen(false);
+			}
+		};
 
-			fetch(url)
-				.then((res) => {
-					if (!res.ok) throw new Error("Failed to fetch options");
-					return res.json();
-				})
-				.then((data) => {
-					const opts = data.data.map((q: any) => ({
-						value: q.id,
-						label: q.name,
-					}));
-					setOptions(opts);
-				})
-				.catch(() => setError(true))
-				.finally(() => setIsLoading(false));
-		}
-	}, [open, url, options.length]);
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
 
-	const handleSelect = (option: Option) => {
-		setSelected(option);
-		onChange(option);
-		setOpen(false);
-	};
+	const selectedOption = options.find((option) => option.value === value);
 
 	return (
-		<div className="w-full relative">
+		<div className={`relative ${className}`} ref={selectRef}>
 			<button
 				type="button"
-				onClick={() => setOpen(!open)}
-				className="w-full p-3 border border-neutral-800 rounded-md bg-white text-left flex justify-between items-center"
+				onClick={() => setIsOpen(!isOpen)}
+				className="w-full border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors"
 			>
-				<span>{selected ? selected.label : "Select a quiz"}</span>
-				{open ? (
-					<ChevronUp className="h-5 w-5 text-neutral-800" />
-				) : (
-					<ChevronDown className="h-5 w-5 text-neutral-800" />
-				)}
+				<span className={selectedOption ? "text-black" : "text-neutral-500"}>
+					{selectedOption ? selectedOption.label : placeholder}
+				</span>
+				<ChevronDown
+					className={`w-4 h-4 text-neutral-600 transition-transform duration-200 ${
+						isOpen ? "rotate-180" : ""
+					}`}
+				/>
 			</button>
 
-			{open && (
-				<ul
-					className="absolute z-10 mt-1 w-full max-h-28 overflow-y-auto border border-neutral-800 rounded-md bg-white
-               scrollbar-thin scrollbar-thumb-transparent scrollbar-track-gray-200"
-				>
-					{isLoading ? (
-						<li className="p-2 rounded-md text-gray-500 flex justify-center items-center">
-							Loading...
-						</li>
-					) : error ? (
-						<li className="p-2 rounded-md text-red-500 flex justify-center items-center">
-							Error loading quizzes
-						</li>
-					) : options.length > 0 ? (
-						options.map((option) => (
-							<li
-								key={option.value}
-								onClick={() => handleSelect(option)}
-								className="p-2 cursor-pointer hover:bg-accent first:rounded-t-md last:rounded-b-md"
-								role="option"
-								aria-selected={selected?.value === option.value}
-							>
-								{option.label}
-							</li>
-						))
-					) : (
-						<li className="px-2 py-1 rounded-e-md text-gray-500 flex justify-center items-center">
-							No options available
-						</li>
-					)}
-				</ul>
+			{isOpen && (
+				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+					{options.map((option) => (
+						<button
+							key={option.value}
+							type="button"
+							onClick={() => {
+								onChange(option.value);
+								setIsOpen(false);
+							}}
+							className={`w-full px-4 py-2 text-left hover:bg-neutral-100 transition-colors first:rounded-t-md last:rounded-b-md ${
+								value === option.value
+									? "bg-blue-50 text-blue-700"
+									: "text-black"
+							}`}
+						>
+							{option.label}
+						</button>
+					))}
+				</div>
 			)}
 		</div>
 	);
-};
-
+}
 export default CustomSelect;

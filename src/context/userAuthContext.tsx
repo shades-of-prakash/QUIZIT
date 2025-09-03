@@ -7,17 +7,24 @@ type User = {
 	quizId: string;
 	quizDuration: string;
 	email: string;
-	participant1?: string;
-	participant2?: string;
+	participant1Name?: string;
+	participant1RollNo?: string;
+	participant2Name?: string;
+	participant2RollNo?: string;
+	collegeName?: string;
+	phoneNumber?: string;
 };
-
 type LoginCredentials = {
 	username: string;
 	password: string;
 	quizId: string;
 	email: string;
-	participant1: string;
-	participant2: string;
+	participant1Name: string;
+	participant1RollNo: string;
+	participant2Name?: string;
+	participant2RollNo?: string;
+	collegeName: string;
+	phoneNumber: string;
 };
 
 type UserAuthContextType = {
