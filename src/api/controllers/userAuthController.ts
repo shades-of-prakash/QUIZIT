@@ -7,6 +7,7 @@ import { ObjectId } from "mongodb";
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 const usersCollection = () => db!.collection<QuizUser>("quiz-users");
 const quizSessionCollection = () => db!.collection("quiz-session");
+const quizzesCollection = () => db!.collection("quizzes");
 
 interface QuizUser {
 	_id: ObjectId;
@@ -45,7 +46,7 @@ export async function userLogin(req: Request) {
 			phoneNumber,
 		} = await req.json();
 
-		// ✅ Require participant1, others optional
+		// ✅ Required fields
 		if (
 			!username ||
 			!password ||
@@ -61,29 +62,29 @@ export async function userLogin(req: Request) {
 					message:
 						"Username, password, quizId, email, participant1, rollNo, collegeName and phoneNumber are required",
 				}),
-				{ status: 400 }
+				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		// Check if user exists for this quiz
+		// ✅ Check if user exists
 		const user = await usersCollection().findOne({ username, quizId });
 		if (!user) {
 			return new Response(
 				JSON.stringify({ message: "Invalid credentials or quiz" }),
-				{ status: 401 }
+				{ status: 401, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		// Password validation
+		// ✅ Password validation
 		const hashedInput = hashPassword(password);
 		if (hashedInput !== user.password) {
 			return new Response(
 				JSON.stringify({ message: "Invalid username or password" }),
-				{ status: 401 }
+				{ status: 401, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		// Check if user has already completed the quiz
+		// ✅ Check if quiz already completed
 		const completedSession = await quizSessionCollection().findOne({
 			userId: user._id.toString(),
 			quizId,
@@ -94,32 +95,12 @@ export async function userLogin(req: Request) {
 				JSON.stringify({
 					message: "User has already completed this quiz",
 				}),
-				{ status: 403 }
+				{ status: 403, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
-		// Check if user is already in an active
-		const activeSession = await quizSessionCollection().findOne({
-			userId: user._id.toString(),
-			quizId,
-			completed: false,
-			endTime: { $gt: Date.now() },
-		});
-		if (activeSession) {
-			return new Response(
-				JSON.stringify({
-					message: "User already in an active quiz session",
-					sessionId: activeSession._id,
-				}),
-				{ status: 403 }
-			);
-		}
-
-		const duplicateCheckConditions: any[] = [
-			{ participant1Name },
-			{ participant1RollNo },
-		];
-		if (participant2Name) duplicateCheckConditions.push({ participant2Name });
+		// ✅ Prevent duplicate roll numbers across teams
+		const duplicateCheckConditions: any[] = [{ participant1RollNo }];
 		if (participant2RollNo)
 			duplicateCheckConditions.push({ participant2RollNo });
 
@@ -133,12 +114,13 @@ export async function userLogin(req: Request) {
 			return new Response(
 				JSON.stringify({
 					message:
-						"One or more participants are already registered in another team",
+						"One or more roll numbers are already registered in another team",
 				}),
-				{ status: 400 }
+				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
 
+		// ✅ Update user info
 		await usersCollection().updateOne(
 			{ _id: user._id },
 			{
@@ -154,7 +136,9 @@ export async function userLogin(req: Request) {
 			}
 		);
 
+		// ✅ Generate JWT
 		const token = generateToken({
+			userId: user._id.toString(),
 			username,
 			quizId,
 			email,
@@ -165,9 +149,9 @@ export async function userLogin(req: Request) {
 			collegeName,
 			phoneNumber,
 		});
+		const cookie = `user_token=${token}; HttpOnly; Path=/; Max-Age=7200; SameSite=Lax;`;
 
-		const cookie = `user_token=${token}; HttpOnly; Path=/; Max-Age=3600; SameSite=Lax;`;
-
+		// remove password before sending
 		const { password: _, ...safeUser } = {
 			...user,
 			participant1Name,
@@ -196,6 +180,7 @@ export async function userLogin(req: Request) {
 		console.error("User login error:", err);
 		return new Response(JSON.stringify({ message: "Invalid request body" }), {
 			status: 400,
+			headers: { "Content-Type": "application/json" },
 		});
 	}
 }

@@ -1,4 +1,9 @@
-import React, { createContext, useContext, type ReactNode } from "react";
+import React, {
+	createContext,
+	useContext,
+	type ReactNode,
+	useEffect,
+} from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 type User = {
@@ -14,6 +19,7 @@ type User = {
 	collegeName?: string;
 	phoneNumber?: string;
 };
+
 type LoginCredentials = {
 	username: string;
 	password: string;
@@ -88,7 +94,6 @@ async function logoutApi(): Promise<void> {
 
 // Provider
 export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
-	// Query to fetch the logged-in user
 	const {
 		data: userData,
 		isLoading,
@@ -110,7 +115,6 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
 		},
 	});
 
-	// Mutation to log out
 	const { mutateAsync: logoutMutation } = useMutation<void, Error>({
 		mutationFn: logoutApi,
 		onSuccess: async () => {

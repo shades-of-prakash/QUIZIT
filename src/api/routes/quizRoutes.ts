@@ -3,14 +3,15 @@ import {
 	createQuizUsers,
 	getAllQuizzes,
 	getQuizNames,
-	getServerTimeController,
+	updateQuizSessionController,
 	getSingleQuiz,
-	getQuizEndTimeController,
+	// getQuizEndTimeController,
 	createQuizSessionController,
 	submitQuizController,
 	checkSessionController,
 	getQuizResultsController,
 	deleteQuizController,
+	getQuizRemainingTimeController,
 } from "../controllers/quizController";
 
 export const quizRoutes = {
@@ -30,12 +31,12 @@ export const quizRoutes = {
 		GET: getQuizNames,
 	},
 
-	"/api/server-time": {
-		GET: getServerTimeController,
-	},
-	"/api/quiz-end-time": {
-		GET: getQuizEndTimeController,
-	},
+	// "/api/server-time": {
+	// 	GET: getServerTimeController,
+	// },
+	// "/api/quiz-end-time": {
+	// 	GET: getQuizEndTimeController,
+	// },
 	"/api/quiz-session": {
 		POST: createQuizSessionController,
 	},
@@ -50,5 +51,12 @@ export const quizRoutes = {
 	},
 	"/api/deletequiz": {
 		GET: deleteQuizController,
+	},
+	"/api/quiz-remaining-time": {
+		GET: getQuizRemainingTimeController,
+	},
+
+	"/api/quiz-session-update": {
+		POST: updateQuizSessionController,
 	},
 };

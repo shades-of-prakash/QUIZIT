@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
-// import loginImage from "../assets/login.png";
-import loginImage from "../assets/login2.jpg";
-
+import loginImage from "../assets/login3.jpg";
 import CustomSelect from "../components/CustomSelect";
 
 const Step1 = ({
@@ -12,14 +10,17 @@ const Step1 = ({
 	handleQuizSelect,
 	quizOptions,
 	selectedQuizTeamSize,
+	errors,
 }: {
 	formData: any;
 	handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	handleQuizSelect: (value: string) => void;
 	quizOptions: { label: string; value: string; teamSize: number }[];
 	selectedQuizTeamSize: number;
+	errors: Record<string, string>;
 }) => (
 	<>
+		{/* Quiz selection */}
 		<div className="w-full flex flex-col gap-2">
 			<label className="text-sm text-neutral-800">Select Quiz</label>
 			<CustomSelect
@@ -28,8 +29,11 @@ const Step1 = ({
 				options={quizOptions.map((q) => ({ value: q.value, label: q.label }))}
 				placeholder="Select a quiz"
 			/>
+			{errors.quizId && <p className="text-red-500 text-sm">{errors.quizId}</p>}
 		</div>
-		<div className="w-full flex flex-col gap-1 ">
+
+		{/* Participant 1 */}
+		<div className="w-full flex flex-col gap-1">
 			<legend className="font-medium">Participant 1</legend>
 			<div className="flex gap-3">
 				<div className="w-1/2 flex flex-col gap-2">
@@ -42,6 +46,9 @@ const Step1 = ({
 						className="py-2 px-4 border border-neutral-800/40 rounded-md"
 						placeholder="Enter name"
 					/>
+					{errors.participant1Name && (
+						<p className="text-red-500 text-sm">{errors.participant1Name}</p>
+					)}
 				</div>
 				<div className="w-1/2 flex flex-col gap-2">
 					<label className="text-sm text-neutral-800">Roll No</label>
@@ -53,6 +60,9 @@ const Step1 = ({
 						className="py-2 px-4 border border-neutral-800/40 rounded-md"
 						placeholder="Enter roll number"
 					/>
+					{errors.participant1RollNo && (
+						<p className="text-red-500 text-sm">{errors.participant1RollNo}</p>
+					)}
 				</div>
 			</div>
 		</div>
@@ -72,6 +82,9 @@ const Step1 = ({
 							className="py-2 px-4 border border-neutral-800/40 rounded-md"
 							placeholder="Enter name"
 						/>
+						{errors.participant2Name && (
+							<p className="text-red-500 text-sm">{errors.participant2Name}</p>
+						)}
 					</div>
 					<div className="w-1/2 flex flex-col gap-2">
 						<label className="text-sm text-neutral-800">Roll No</label>
@@ -83,6 +96,11 @@ const Step1 = ({
 							className="py-2 px-4 border border-neutral-800/40 rounded-md"
 							placeholder="Enter roll number"
 						/>
+						{errors.participant2RollNo && (
+							<p className="text-red-500 text-sm">
+								{errors.participant2RollNo}
+							</p>
+						)}
 					</div>
 				</div>
 			</div>
@@ -99,8 +117,12 @@ const Step1 = ({
 				className="py-2 px-4 border border-neutral-800/40 rounded-md"
 				placeholder="Enter college name"
 			/>
+			{errors.collegeName && (
+				<p className="text-red-500 text-sm">{errors.collegeName}</p>
+			)}
 		</div>
 
+		{/* Phone */}
 		<div className="flex flex-col gap-2">
 			<label className="text-sm text-neutral-800">Phone Number</label>
 			<input
@@ -115,6 +137,9 @@ const Step1 = ({
 				maxLength={10}
 				required
 			/>
+			{errors.phoneNumber && (
+				<p className="text-red-500 text-sm">{errors.phoneNumber}</p>
+			)}
 		</div>
 
 		{/* Email */}
@@ -128,6 +153,7 @@ const Step1 = ({
 				className="py-2 px-4 border border-neutral-800/40 rounded-md"
 				placeholder="Enter email address"
 			/>
+			{errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
 		</div>
 	</>
 );
@@ -137,13 +163,16 @@ const Step2 = ({
 	handleChange,
 	handlePreviousStep,
 	loginMutationIsLoading,
+	errors,
 }: {
 	formData: any;
 	handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	handlePreviousStep: () => void;
 	loginMutationIsLoading: boolean;
+	errors: Record<string, string>;
 }) => (
 	<div className="flex flex-col gap-5">
+		{/* Username */}
 		<div className="flex flex-col gap-2">
 			<label className="text-sm text-neutral-800">Username</label>
 			<input
@@ -154,8 +183,12 @@ const Step2 = ({
 				className="py-3 px-4 border border-neutral-800/40 rounded-md"
 				placeholder="Enter username"
 			/>
+			{errors.username && (
+				<p className="text-red-500 text-sm">{errors.username}</p>
+			)}
 		</div>
 
+		{/* Password */}
 		<div className="flex flex-col gap-2">
 			<label className="text-sm text-neutral-800">Password</label>
 			<input
@@ -166,13 +199,16 @@ const Step2 = ({
 				className="py-3 px-4 border border-neutral-800/40 rounded-md"
 				placeholder="Enter password"
 			/>
+			{errors.password && (
+				<p className="text-red-500 text-sm">{errors.password}</p>
+			)}
 		</div>
 
-		<div className="flex gap-3 mt-4">
+		<div className="flex justify-start gap-3 mt-4">
 			<button
 				type="button"
 				onClick={handlePreviousStep}
-				className="flex-1 py-2 border border-neutral-800/40 text-neutral-800 rounded-md text-lg hover:bg-gray-100 transition-colors"
+				className=" px-3 py-1 border border-neutral-800/40 text-neutral-800 rounded-md text-lg hover:bg-gray-100 transition-colors"
 			>
 				Previous
 			</button>
@@ -180,7 +216,7 @@ const Step2 = ({
 			<button
 				type="submit"
 				disabled={loginMutationIsLoading}
-				className="flex-1 py-2 bg-black text-white rounded-md text-lg disabled:opacity-50 hover:bg-gray-800 transition-colors"
+				className="px-4 py-2 bg-black text-white rounded-md text-lg disabled:opacity-50 hover:bg-gray-800 transition-colors"
 			>
 				{loginMutationIsLoading ? "Logging in..." : "Continue"}
 			</button>
@@ -209,6 +245,7 @@ const Login: React.FC = () => {
 		{ label: string; value: string; teamSize: number }[]
 	>([]);
 	const [selectedQuizTeamSize, setSelectedQuizTeamSize] = useState(0);
+	const [errors, setErrors] = useState<Record<string, string>>({});
 
 	// Fetch quiz names
 	useEffect(() => {
@@ -217,7 +254,6 @@ const Login: React.FC = () => {
 				const res = await fetch("/api/quiznames");
 				if (!res.ok) throw new Error("Failed to fetch quiz names");
 				const data = await res.json();
-				console.log(data);
 				setQuizOptions(
 					data.data.map((quiz: any) => ({
 						label: quiz.name,
@@ -226,7 +262,10 @@ const Login: React.FC = () => {
 					}))
 				);
 			} catch (err) {
-				console.error("Error fetching quiz names:", err);
+				setErrors((prev) => ({
+					...prev,
+					global: "Could not load quizzes. Please try again later.",
+				}));
 			}
 		};
 		fetchQuizNames();
@@ -235,16 +274,17 @@ const Login: React.FC = () => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
+		setErrors((prev) => ({ ...prev, [name]: "" })); // clear error while typing
 	};
 
 	const handleQuizSelect = (value: string) => {
 		setFormData((prev) => ({ ...prev, quizId: value }));
+		setErrors((prev) => ({ ...prev, quizId: "" }));
 
 		const selectedQuiz = quizOptions.find((quiz) => quiz.value === value);
 		const teamSize = selectedQuiz ? selectedQuiz.teamSize : 0;
 		setSelectedQuizTeamSize(teamSize);
 
-		// Reset participant 2 if teamSize = 1
 		if (teamSize === 1) {
 			setFormData((prev) => ({
 				...prev,
@@ -254,9 +294,39 @@ const Login: React.FC = () => {
 		}
 	};
 
+	const validateStep1 = () => {
+		let newErrors: Record<string, string> = {};
+		if (!formData.quizId) newErrors.quizId = "Quiz selection is required.";
+		if (!formData.participant1Name)
+			newErrors.participant1Name = "Participant 1 name is required.";
+		if (!formData.participant1RollNo)
+			newErrors.participant1RollNo = "Participant 1 roll number is required.";
+		if (selectedQuizTeamSize > 1) {
+			if (!formData.participant2Name)
+				newErrors.participant2Name = "Participant 2 name is required.";
+			if (!formData.participant2RollNo)
+				newErrors.participant2RollNo = "Participant 2 roll number is required.";
+		}
+		if (!formData.collegeName)
+			newErrors.collegeName = "College name is required.";
+		if (!formData.phoneNumber || formData.phoneNumber.length !== 10)
+			newErrors.phoneNumber = "Valid 10-digit phone number is required.";
+		if (!formData.email) newErrors.email = "Email is required.";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const validateStep2 = () => {
+		let newErrors: Record<string, string> = {};
+		if (!formData.username) newErrors.username = "Username is required.";
+		if (!formData.password) newErrors.password = "Password is required.";
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
 	const handleNextStep = (e: React.FormEvent) => {
 		e.preventDefault();
-		setCurrentStep(2);
+		if (validateStep1()) setCurrentStep(2);
 	};
 
 	const handlePreviousStep = () => {
@@ -265,11 +335,15 @@ const Login: React.FC = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!validateStep2()) return;
 		try {
 			await login(formData);
 			navigate(`/`);
-		} catch (error) {
-			console.error("Login failed:", error);
+		} catch (error: any) {
+			setErrors((prev) => ({
+				...prev,
+				global: error.message || "Login failed. Please try again.",
+			}));
 		}
 	};
 
@@ -299,6 +373,11 @@ const Login: React.FC = () => {
 						onSubmit={onFormSubmit}
 						className="w-full max-w-xl flex flex-col gap-3"
 					>
+						{errors.global && (
+							<p className="text-red-600 text-sm text-center mb-2">
+								{errors.global}
+							</p>
+						)}
 						{currentStep === 1 ? (
 							<>
 								<Step1
@@ -307,6 +386,7 @@ const Login: React.FC = () => {
 									handleQuizSelect={handleQuizSelect}
 									quizOptions={quizOptions}
 									selectedQuizTeamSize={selectedQuizTeamSize}
+									errors={errors}
 								/>
 								<div className="flex items-center justify-end pt-2">
 									<button
@@ -323,6 +403,7 @@ const Login: React.FC = () => {
 								handleChange={handleChange}
 								handlePreviousStep={handlePreviousStep}
 								loginMutationIsLoading={loginMutationIsLoading}
+								errors={errors}
 							/>
 						)}
 					</form>

@@ -1,3 +1,4 @@
+// Timer.tsx
 import React, { useEffect, useState } from "react";
 import { Timer as TimerIcon } from "lucide-react";
 
@@ -10,28 +11,21 @@ type TimerProps = {
 const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 	const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
+	// Fetch initial time
 	useEffect(() => {
 		const initTimer = async () => {
 			try {
-				// fetch server time + quiz end time
-				const [serverRes, endTimeRes] = await Promise.all([
-					fetch("/api/server-time"),
-					fetch(`/api/quiz-end-time?userId=${userId}&quizId=${quizId}`),
-				]);
+				const res = await fetch(
+					`/api/quiz-remaining-time?userId=${userId}&quizId=${quizId}`
+				);
+				const data = await res.json();
 
-				const serverData = await serverRes.json();
-				const endTimeData = await endTimeRes.json();
-
-				if (!endTimeData.endTime) {
-					console.error("No endTime returned from server");
+				if (data.remainingSeconds === undefined) {
+					console.error("No remainingSeconds returned from server");
 					return;
 				}
 
-				const remainingSeconds = Math.floor(
-					(endTimeData.endTime - serverData.serverTime) / 1000
-				);
-
-				setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+				setTimeLeft(data.remainingSeconds > 0 ? data.remainingSeconds : 0);
 			} catch (error) {
 				console.error("Failed to init timer", error);
 			}
@@ -40,6 +34,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 		initTimer();
 	}, [userId, quizId]);
 
+	// Countdown locally
 	useEffect(() => {
 		if (timeLeft === null) return;
 		if (timeLeft <= 0) {
@@ -48,19 +43,39 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 		}
 
 		const interval = setInterval(() => {
-			setTimeLeft((prev) => {
-				if (prev === null) return null;
-				if (prev <= 1) {
-					clearInterval(interval);
-					onTimeUp?.();
-					return 0;
-				}
-				return prev - 1;
-			});
+			setTimeLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
 		}, 1000);
 
 		return () => clearInterval(interval);
 	}, [timeLeft, onTimeUp]);
+
+	// Heartbeat to server every 30s + on unmount
+	useEffect(() => {
+		if (timeLeft === null) return;
+
+		const sendHeartbeat = async (remaining: number) => {
+			try {
+				await fetch("/api/quiz-session-update", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ userId, quizId, remainingSeconds: remaining }),
+				});
+			} catch (err) {
+				console.error("Failed to send heartbeat", err);
+			}
+		};
+
+		// heartbeat every 30s
+		const heartbeatInterval = setInterval(() => {
+			if (timeLeft > 0) sendHeartbeat(timeLeft);
+		}, 30_000);
+
+		// send on unmount/logout
+		return () => {
+			clearInterval(heartbeatInterval);
+			if (timeLeft > 0) sendHeartbeat(timeLeft);
+		};
+	}, [timeLeft, userId, quizId]);
 
 	if (timeLeft === null) return <div>Loading timer...</div>;
 
