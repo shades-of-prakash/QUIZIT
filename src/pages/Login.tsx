@@ -24,6 +24,7 @@ const Step1 = ({
 		<div className="w-full flex flex-col gap-2">
 			<label className="text-sm text-neutral-800">Select Quiz</label>
 			<CustomSelect
+				stylePropsOfSelect="px-2 py-1 text-sm"
 				value={formData.quizId}
 				onChange={handleQuizSelect}
 				options={quizOptions.map((q) => ({ value: q.value, label: q.label }))}
@@ -33,32 +34,34 @@ const Step1 = ({
 		</div>
 
 		{/* Participant 1 */}
-		<div className="w-full flex flex-col gap-1">
-			<legend className="font-medium">Participant 1</legend>
-			<div className="flex gap-3">
-				<div className="w-1/2 flex flex-col gap-2">
+		<div className="w-full  flex flex-col gap-1">
+			<span className="text-sm font-medium">Participant 1</span>
+			<div className="w-full flex gap-2">
+				<div className="flex-1 flex flex-col gap-2">
 					<label className="text-sm text-neutral-800">Name</label>
 					<input
 						type="text"
 						name="participant1Name"
 						value={formData.participant1Name}
 						onChange={handleChange}
-						className="py-2 px-4 border border-neutral-800/40 rounded-md"
+						className="w-full   py-1 px-2 placeholder:text-sm border border-neutral-800/40 rounded-md"
 						placeholder="Enter name"
+						required
 					/>
 					{errors.participant1Name && (
 						<p className="text-red-500 text-sm">{errors.participant1Name}</p>
 					)}
 				</div>
-				<div className="w-1/2 flex flex-col gap-2">
+				<div className="flex-1 flex flex-col gap-2">
 					<label className="text-sm text-neutral-800">Roll No</label>
 					<input
 						type="text"
 						name="participant1RollNo"
 						value={formData.participant1RollNo}
 						onChange={handleChange}
-						className="py-2 px-4 border border-neutral-800/40 rounded-md"
+						className="w-full py-1 px-2 placeholder:text-sm border border-neutral-800/40 rounded-md"
 						placeholder="Enter roll number"
+						required
 					/>
 					{errors.participant1RollNo && (
 						<p className="text-red-500 text-sm">{errors.participant1RollNo}</p>
@@ -70,31 +73,33 @@ const Step1 = ({
 		{/* Participant 2 - Only if teamSize > 1 */}
 		{selectedQuizTeamSize > 1 && (
 			<div className="w-full flex flex-col gap-1">
-				<legend className="font-medium">Participant 2</legend>
-				<div className="flex gap-3">
-					<div className="w-1/2 flex flex-col gap-2">
+				<span className="text-sm font-medium">Participant 2</span>
+				<div className="w-full flex gap-3">
+					<div className="flex-1 flex flex-col gap-2">
 						<label className="text-sm text-neutral-800">Name</label>
 						<input
 							type="text"
 							name="participant2Name"
 							value={formData.participant2Name}
 							onChange={handleChange}
-							className="py-2 px-4 border border-neutral-800/40 rounded-md"
+							className="w-full py-1 px-2 placeholder:text-sm border border-neutral-800/40 rounded-md"
 							placeholder="Enter name"
+							required
 						/>
 						{errors.participant2Name && (
 							<p className="text-red-500 text-sm">{errors.participant2Name}</p>
 						)}
 					</div>
-					<div className="w-1/2 flex flex-col gap-2">
+					<div className="flex-1 flex flex-col gap-2">
 						<label className="text-sm text-neutral-800">Roll No</label>
 						<input
 							type="text"
 							name="participant2RollNo"
 							value={formData.participant2RollNo}
 							onChange={handleChange}
-							className="py-2 px-4 border border-neutral-800/40 rounded-md"
+							className="w-full py-1 px-2 placeholder:text-sm border border-neutral-800/40 rounded-md"
 							placeholder="Enter roll number"
+							required
 						/>
 						{errors.participant2RollNo && (
 							<p className="text-red-500 text-sm">
@@ -114,8 +119,9 @@ const Step1 = ({
 				name="collegeName"
 				value={formData.collegeName}
 				onChange={handleChange}
-				className="py-2 px-4 border border-neutral-800/40 rounded-md"
+				className="py-1 px-2 placeholder:text-sm border border-neutral-800/40 rounded-md"
 				placeholder="Enter college name"
+				required
 			/>
 			{errors.collegeName && (
 				<p className="text-red-500 text-sm">{errors.collegeName}</p>
@@ -130,12 +136,13 @@ const Step1 = ({
 				name="phoneNumber"
 				value={formData.phoneNumber}
 				onChange={handleChange}
-				className="py-2 px-4 border border-neutral-800/40 rounded-md"
+				className="placeholder:text-sm py-1 px-2 border border-neutral-800/40 rounded-md"
 				placeholder="Enter phone number"
 				inputMode="numeric"
 				pattern="\d{10}"
 				maxLength={10}
 				required
+				
 			/>
 			{errors.phoneNumber && (
 				<p className="text-red-500 text-sm">{errors.phoneNumber}</p>
@@ -144,14 +151,15 @@ const Step1 = ({
 
 		{/* Email */}
 		<div className="flex flex-col gap-2">
-			<label className="text-sm text-neutral-800">Email</label>
+			<label className="text-sm  text-neutral-800">Email</label>
 			<input
 				type="email"
 				name="email"
 				value={formData.email}
 				onChange={handleChange}
-				className="py-2 px-4 border border-neutral-800/40 rounded-md"
+				className="placeholder:text-sm py-1 px-2 border border-neutral-800/40 rounded-md"
 				placeholder="Enter email address"
+				required
 			/>
 			{errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
 		</div>
@@ -171,44 +179,54 @@ const Step2 = ({
 	loginMutationIsLoading: boolean;
 	errors: Record<string, string>;
 }) => (
-	<div className="flex flex-col gap-5">
-		{/* Username */}
-		<div className="flex flex-col gap-2">
-			<label className="text-sm text-neutral-800">Username</label>
-			<input
-				type="text"
-				name="username"
-				value={formData.username}
-				onChange={handleChange}
-				className="py-3 px-4 border border-neutral-800/40 rounded-md"
-				placeholder="Enter username"
-			/>
-			{errors.username && (
-				<p className="text-red-500 text-sm">{errors.username}</p>
-			)}
+	<div className="flex flex-col items-center gap-5">
+		{/* Instruction text */}
+		<span className="text-base text-neutral-600 text-center">
+			Log in with the credentials provided by your coordinators.		
+		</span>
+
+		<div className="flex flex-col w-full gap-3">
+			{/* Username */}
+			<div className="flex flex-col gap-2">
+				<label className="text-sm text-neutral-800">Username</label>
+				<input
+					type="text"
+					name="username"
+					value={formData.username}
+					onChange={handleChange}
+					className="placeholder:text-sm py-2 px-4 border border-neutral-800/40 rounded-md focus:outline-none focus:ring-2 focus:ring-black/60"
+					placeholder="Enter your username"
+					required
+				/>
+				{errors.username && (
+					<p className="text-red-500 text-sm">{errors.username}</p>
+				)}
+			</div>
+
+			{/* Password */}
+			<div className="flex flex-col gap-2">
+				<label className="text-sm text-neutral-800">Password</label>
+				<input
+					type="password"
+					name="password"
+					value={formData.password}
+					onChange={handleChange}
+					className="placeholder:text-sm py-2 px-4 border border-neutral-800/40 rounded-md focus:outline-none focus:ring-2 focus:ring-black/60"
+					placeholder="Enter your password"
+					required
+				/>
+				{errors.password && (
+					<p className="text-red-500 text-sm">{errors.password}</p>
+				)}
+			</div>
 		</div>
 
-		{/* Password */}
-		<div className="flex flex-col gap-2">
-			<label className="text-sm text-neutral-800">Password</label>
-			<input
-				type="password"
-				name="password"
-				value={formData.password}
-				onChange={handleChange}
-				className="py-3 px-4 border border-neutral-800/40 rounded-md"
-				placeholder="Enter password"
-			/>
-			{errors.password && (
-				<p className="text-red-500 text-sm">{errors.password}</p>
-			)}
-		</div>
-
-		<div className="flex justify-start gap-3 mt-4">
+		{/* Navigation buttons */}
+		<div className="flex w-full gap-3 mt-4">
 			<button
 				type="button"
 				onClick={handlePreviousStep}
-				className=" px-3 py-1 border border-neutral-800/40 text-neutral-800 rounded-md text-lg hover:bg-gray-100 transition-colors"
+				className="px-4 py-2 text-sm border border-neutral-800/40 text-neutral-800 rounded-md hover:bg-gray-100 transition-colors"
 			>
 				Previous
 			</button>
@@ -216,13 +234,14 @@ const Step2 = ({
 			<button
 				type="submit"
 				disabled={loginMutationIsLoading}
-				className="px-4 py-2 bg-black text-white rounded-md text-lg disabled:opacity-50 hover:bg-gray-800 transition-colors"
+				className="px-4 py-2 text-sm bg-black text-white rounded-md disabled:opacity-50 hover:bg-gray-800 transition-colors"
 			>
 				{loginMutationIsLoading ? "Logging in..." : "Continue"}
 			</button>
 		</div>
 	</div>
 );
+
 
 const Login: React.FC = () => {
 	const navigate = useNavigate();
@@ -274,7 +293,7 @@ const Login: React.FC = () => {
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
 		setFormData((prev) => ({ ...prev, [name]: value }));
-		setErrors((prev) => ({ ...prev, [name]: "" })); // clear error while typing
+		setErrors((prev) => ({ ...prev, [name]: "" })); 
 	};
 
 	const handleQuizSelect = (value: string) => {
@@ -360,11 +379,11 @@ const Login: React.FC = () => {
 				/>
 			</div>
 
-			<div className="w-1/2 h-full border border-neutral-800/40">
-				<div className="px-20 py-5 flex flex-col gap-3 justify-center items-center w-full h-full rounded-xl">
-					<div className="text-center mb-5 flex flex-col gap-1">
-						<h1 className="text-2xl font-bold">QUIZIT</h1>
-						<span className="text-base text-neutral-800">
+			<div className="w-1/2 h-full ">
+				<div className="px-20 py-5  flex flex-col gap-3  justify-center items-center w-full h-full rounded-xl">
+					<div className="text-center  flex flex-col gap-1">
+						<h1 className={`font-bold ${currentStep === 2?"text-3xl":"text-2xl"}`}>QUIZ<span className="text-accent">IT</span></h1>
+						<span className="text-sm text-neutral-800">
 							Powered by RVR&JC Information Technology.
 						</span>
 					</div>
@@ -388,10 +407,10 @@ const Login: React.FC = () => {
 									selectedQuizTeamSize={selectedQuizTeamSize}
 									errors={errors}
 								/>
-								<div className="flex items-center justify-end pt-2">
+								<div className="flex items-center justify-start">
 									<button
 										type="submit"
-										className="py-2 px-4 mt-4 bg-black text-white rounded-md text-lg hover:bg-gray-800 transition-colors"
+										className="py-2 px-4  mt-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 transition-colors"
 									>
 										Continue
 									</button>
@@ -409,6 +428,7 @@ const Login: React.FC = () => {
 					</form>
 				</div>
 			</div>
+
 		</div>
 	);
 };

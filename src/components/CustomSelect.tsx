@@ -6,6 +6,7 @@ interface CustomSelectProps {
 	options: { value: string; label: string }[];
 	placeholder?: string;
 	className?: string;
+	stylePropsOfSelect?:string;
 }
 function CustomSelect({
 	value,
@@ -13,6 +14,7 @@ function CustomSelect({
 	options,
 	placeholder,
 	className = "",
+	stylePropsOfSelect
 }: CustomSelectProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const selectRef = useRef<HTMLDivElement>(null);
@@ -38,7 +40,7 @@ function CustomSelect({
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className="w-full border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors"
+				className={`w-full border border-neutral-800/30  ${stylePropsOfSelect||"px-4 py-2"} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors`}
 			>
 				<span className={selectedOption ? "text-black" : "text-neutral-500"}>
 					{selectedOption ? selectedOption.label : placeholder}
@@ -60,7 +62,7 @@ function CustomSelect({
 								onChange(option.value);
 								setIsOpen(false);
 							}}
-							className={`w-full px-4 py-2 text-left hover:bg-neutral-100 transition-colors first:rounded-t-md last:rounded-b-md ${
+							className={`w-full px-4 py-2 ${stylePropsOfSelect} text-left hover:bg-neutral-100 transition-colors first:rounded-t-md last:rounded-b-md ${
 								value === option.value
 									? "bg-blue-50 text-blue-700"
 									: "text-black"

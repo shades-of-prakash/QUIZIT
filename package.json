@@ -9,6 +9,7 @@
 		"build": "bunx tailwindcss -i ./src/index.css -o ./src/output.css  && bun run build.ts"
 	},
 	"dependencies": {
+		"@lottiefiles/dotlottie-react": "^0.15.2",
 		"@tanstack/react-query": "^5.84.2",
 		"@types/bcrypt": "^6.0.0",
 		"@types/jsonwebtoken": "^9.0.10",
