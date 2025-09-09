@@ -35,12 +35,12 @@ function DashboardLayout() {
 				</h1>
 			</div>
 			<div className="w-full flex flex-1">
-				<div className="bg-neutral-100 w-[180px] h-full flex flex-col gap-1 py-1 border-r border-neutral-400">
+				<div className="bg-neutral-100 w-[200px] h-full flex flex-col gap-1 py-1 border-r border-neutral-400">
 					{menuItems.map((item, index) => (
 						<div key={index} className="px-2">
 							<Link
 								to={item.link}
-								className={`flex items-center ${
+								className={`flex items-center  ${
 									currentActive === index
 										? "bg-black text-white border border-neutral-400"
 										: "bg-neutral-100 cursor-pointer hover:bg-accent hover:border-neutral-300"

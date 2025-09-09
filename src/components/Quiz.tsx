@@ -11,8 +11,16 @@ import "prismjs/components/prism-c";
 import { useUserAuth } from "../context/userAuthContext";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { TriangleAlert } from "lucide-react";
 
-/* ---------------- MODAL COMPONENT ---------------- */
+type Question = {
+	sno?: string;
+	question?: string;
+	options?: string[];
+	multiple?: boolean;
+	user_options?: number[];
+};
+
 const WarningModal: React.FC<{
 	open: boolean;
 	message: string;
@@ -20,13 +28,24 @@ const WarningModal: React.FC<{
 }> = ({ open, message, onClose }) => {
 	if (!open) return null;
 	return (
-		<div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-			<div className="bg-white rounded-xl shadow-lg w-[400px] p-6 text-center">
-				<h2 className="text-xl font-bold mb-4 text-red-600">⚠️ Warning</h2>
-				<p className="mb-6 text-gray-800">{message}</p>
+		<div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+			<div className="bg-white rounded-xl shadow-xl w-[380px] p-6 text-center animate-fadeIn">
+				<div className="flex flex-col items-center justify-center gap-2 mb-4">
+					<TriangleAlert size={48} />
+					<h2 className="text-2xl font-semibold text-amber-700">Warning</h2>
+				</div>
+				<p className="flex flex-col gap-1 mb-6 text-sm text-gray-700 leading-relaxed p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+					<span>
+						You have switched tabs
+						<span className="font-semibold mx-1">{message} out of 3</span>{" "}
+						times.
+					</span>
+					<span>If it happens again, your quiz will be</span>
+					<span className="font-semibold text-red-600">auto-submitted</span>
+				</p>
 				<button
 					onClick={onClose}
-					className="px-5 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold"
+					className="w-full px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium shadow-md transition-colors"
 				>
 					I Understand
 				</button>
@@ -35,24 +54,17 @@ const WarningModal: React.FC<{
 	);
 };
 
-type Question = {
-	sno: string;
-	question: string;
-	options: string[];
-	multiple: boolean;
-};
-
 const Quiz: React.FC = () => {
 	const { user } = useUserAuth();
 	const navigate = useNavigate();
+
 	const [submitting, setSubmitting] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
+	const [sessionLoaded, setSessionLoaded] = useState(false);
 
 	const [questions, setQuestions] = useState<Question[]>([]);
 	const [activeQuestion, setActiveQuestion] = useState(0);
-	const [selectedOptions, setSelectedOptions] = useState<
-		Record<number, number[]>
-	>({});
+	const [remainingSeconds, setRemainingSeconds] = useState(0);
 	const [skippedQuestions, setSkippedQuestions] = useState<Set<number>>(
 		new Set()
 	);
@@ -61,9 +73,66 @@ const Quiz: React.FC = () => {
 	const [showWarning, setShowWarning] = useState(false);
 	const [warningMessage, setWarningMessage] = useState("");
 
-	const STORAGE_KEY = `quiz_answers_${user?.quizId || "default"}`;
-	const ACTIVE_KEY = `quiz_active_${user?.quizId || "default"}`;
-	const SKIPPED_KEY = `quiz_skipped_${user?.quizId || "default"}`;
+	/* ---------------- INITIALIZE SESSION ---------------- */
+	const initializeSession = async () => {
+		if (!user || !user.quizId) return;
+
+		try {
+			const res = await fetch("/api/create-quiz-session", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					userId: user._id,
+					quizId: user.quizId,
+					quizDuration: user.quizDuration || 60, // Default 60 minutes
+				}),
+				credentials: "include",
+			});
+
+			if (!res.ok) {
+				const error = await res.json();
+				throw new Error(error.error || "Failed to initialize session");
+			}
+
+			const data = await res.json();
+
+			setQuestions(data.questions || []);
+			setRemainingSeconds(data.remainingSeconds || 0);
+			setActiveQuestion(data.activeQuestion || 0);
+			setSkippedQuestions(new Set(data.skippedQuestions || []));
+
+			setSessionLoaded(true);
+		} catch (error: any) {
+			console.error("Failed to initialize session:", error);
+			toast.error(error.message || "Failed to load quiz session");
+			navigate("/");
+		}
+	};
+
+	/* ---------------- SAVE SESSION STATE ---------------- */
+	const saveSessionState = async (updatedQuestions?: Question[]) => {
+		if (!user || !user.quizId || !sessionLoaded) return;
+
+		const questionsToSave = updatedQuestions || questions;
+
+		try {
+			await fetch("/api/save-session-state", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					userId: user._id,
+					quizId: user.quizId,
+					questions: questionsToSave,
+					activeQuestion,
+					skippedQuestions: Array.from(skippedQuestions),
+				}),
+				credentials: "include",
+			});
+		} catch (error) {
+			console.error("Failed to save session state:", error);
+			toast.error("Failed to save progress");
+		}
+	};
 
 	/* ---------------- TIMER ---------------- */
 	const handleTimeUp = () => {
@@ -80,211 +149,166 @@ const Quiz: React.FC = () => {
 			return;
 		}
 
-		setSubmitting(true);
+		const unanswered = questions.filter(
+			(q) => !q.user_options || q.user_options.length === 0
+		);
+		if (unanswered.length > 0) {
+			toast.warning(
+				`You must answer all questions before submitting. ${unanswered.length} question(s) left unanswered.`
+			);
+			return;
+		}
 
-		const payload = {
-			participant1: user.participant1,
-			participant2: user.participant2,
-			email: user.email,
-			userId: user._id,
-			quizId: user.quizId,
-			answers: selectedOptions,
-		};
+		setSubmitting(true);
 
 		try {
 			const res = await fetch("/api/submit-quiz", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
+				body: JSON.stringify({
+					userId: user._id,
+					quizId: user.quizId,
+					participant1Name: user.participant1Name,
+					participant1RollNo: user.participant1RollNo,
+					participant2Name: user.participant2Name,
+					participant2RollNo: user.participant2RollNo,
+					email: user.email,
+					questions,
+				}),
 				credentials: "include",
 			});
 
 			if (!res.ok) throw new Error("Failed to submit quiz");
+
 			await res.json();
-
-			localStorage.removeItem(STORAGE_KEY);
-			localStorage.removeItem(ACTIVE_KEY);
-			localStorage.removeItem(SKIPPED_KEY);
-
 			setSubmitted(true);
 			toast.success("✅ Quiz submitted successfully!");
-			navigate("/test");
-		} catch (err) {
-			console.error("❌ Error submitting quiz:", err);
+			navigate("/submission");
+		} catch (error) {
+			console.error("Submit error:", error);
 			toast.error("Failed to submit quiz. Please try again.");
 			setSubmitting(false);
 		}
 	};
 
-	/* ---------------- RESTORE STATE ---------------- */
 	useEffect(() => {
-		try {
-			const savedAnswers = localStorage.getItem(STORAGE_KEY);
-			if (savedAnswers) setSelectedOptions(JSON.parse(savedAnswers));
-
-			const savedActive = localStorage.getItem(ACTIVE_KEY);
-			if (savedActive) setActiveQuestion(Number(savedActive));
-
-			const savedSkipped = localStorage.getItem(SKIPPED_KEY);
-			if (savedSkipped) setSkippedQuestions(new Set(JSON.parse(savedSkipped)));
-		} catch (e) {
-			console.error("❌ Failed to restore quiz state", e);
-			toast.error("Failed to restore quiz state");
-		}
-	}, [STORAGE_KEY, ACTIVE_KEY, SKIPPED_KEY]);
-
-	/* ---------------- PERSIST STATE ---------------- */
-	useEffect(() => {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedOptions));
-	}, [selectedOptions]);
-
-	useEffect(() => {
-		localStorage.setItem(ACTIVE_KEY, String(activeQuestion));
-	}, [activeQuestion]);
-
-	useEffect(() => {
-		localStorage.setItem(SKIPPED_KEY, JSON.stringify([...skippedQuestions]));
-	}, [skippedQuestions]);
-
-	/* ---------------- FETCH QUIZ ---------------- */
-	useEffect(() => {
-		const fetchQuiz = async (quizId: string) => {
-			try {
-				const response = await fetch("/api/quizdetails", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ quizId }),
-				});
-				if (!response.ok) throw new Error("Failed to fetch quiz");
-				return response.json();
-			} catch (err) {
-				console.error("❌ Error fetching quiz:", err);
-				toast.error("Failed to load quiz. Please refresh.");
-				return null;
-			}
-		};
-
-		if (user?.quizId) {
-			fetchQuiz(user.quizId).then((data) => {
-				if (data?.questions) setQuestions(data.questions);
-			});
+		if (user?._id && user.quizId) {
+			initializeSession();
 		}
 	}, [user]);
 
-	/* ---------------- PRISM HIGHLIGHT ---------------- */
+	/* ---------------- PRISM HIGHLIGHTING ---------------- */
 	useEffect(() => {
-		if (questions.length > 0) Prism.highlightAll();
+		if (questions.length > 0) {
+			setTimeout(() => Prism.highlightAll(), 100);
+		}
 	}, [activeQuestion, questions]);
-
-	/* ---------------- FULLSCREEN ---------------- */
-	useEffect(() => {
-		const docEl: any = document.documentElement;
-		if (docEl.requestFullscreen) docEl.requestFullscreen();
-	}, []);
 
 	/* ---------------- TAB SWITCH DETECTION ---------------- */
 	useEffect(() => {
 		const handleVisibilityChange = () => {
-			if (document.hidden) {
+			if (document.hidden && sessionLoaded && !submitted) {
 				setTabSwitchCount((prev) => {
 					const newCount = prev + 1;
-
-					if (newCount === 1 || newCount === 2) {
-						setWarningMessage(
-							`⚠️ Warning ${newCount}/3: Do not switch tabs. On 3rd attempt, quiz will be auto-submitted.`
-						);
+					if (newCount < 3) {
+						setWarningMessage(`${newCount}`);
 						setShowWarning(true);
-					}
-
-					if (newCount > 2) {
+					} else {
 						toast.error("🚨 You switched tabs 3 times. Auto-submitting quiz.");
 						handleSubmit();
 					}
-
 					return newCount;
 				});
 			}
 		};
 
 		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () => {
+		return () =>
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
-		};
-	}, []);
+	}, [sessionLoaded, submitted]);
 
 	/* ---------------- OPTION SELECT ---------------- */
 	const handleOptionChange = useCallback(
 		(optionIndex: number) => {
-			setSelectedOptions((prev) => {
-				const isMultiple = questions[activeQuestion]?.multiple ?? false;
-				const prevOptions = prev[activeQuestion] || [];
+			setQuestions((prevQuestions) => {
+				const updatedQuestions = [...prevQuestions];
+				const currentQuestion = { ...updatedQuestions[activeQuestion] };
+				const isMultiple = currentQuestion.multiple;
+				const currentOptions = [...(currentQuestion.user_options || [])];
 
-				let updated: number[];
 				if (isMultiple) {
-					updated = prevOptions.includes(optionIndex)
-						? prevOptions.filter((i) => i !== optionIndex)
-						: [...prevOptions, optionIndex];
+					if (currentOptions.includes(optionIndex)) {
+						currentQuestion.user_options = currentOptions.filter(
+							(i) => i !== optionIndex
+						);
+					} else {
+						currentQuestion.user_options = [...currentOptions, optionIndex];
+					}
 				} else {
-					updated = [optionIndex];
+					currentQuestion.user_options = [optionIndex];
 				}
 
-				const newSelected = { ...prev, [activeQuestion]: updated };
-
-				setSkippedQuestions((prevSkipped) => {
-					const newSkipped = new Set(prevSkipped);
-					if (updated.length > 0) newSkipped.delete(activeQuestion);
-					return newSkipped;
-				});
-
-				return newSelected;
+				updatedQuestions[activeQuestion] = currentQuestion;
+				saveSessionState(updatedQuestions);
+				return updatedQuestions;
 			});
 		},
-		[activeQuestion, questions]
-	);
-
-	/* ---------------- SKIP TRACKING ---------------- */
-	const markSkippedIfNeeded = useCallback(
-		(index: number) => {
-			if (!selectedOptions[index]?.length) {
-				setSkippedQuestions((prev) => new Set(prev).add(index));
-			} else {
-				setSkippedQuestions((prev) => {
-					const newSkipped = new Set(prev);
-					newSkipped.delete(index);
-					return newSkipped;
-				});
-			}
-		},
-		[selectedOptions]
+		[activeQuestion, saveSessionState]
 	);
 
 	/* ---------------- NAVIGATION ---------------- */
 	const handleNext = () => {
-		markSkippedIfNeeded(activeQuestion);
-		if (activeQuestion < questions.length - 1)
+		if (activeQuestion < questions.length - 1) {
 			setActiveQuestion(activeQuestion + 1);
+		}
 	};
+
 	const handlePrevious = () => {
-		markSkippedIfNeeded(activeQuestion);
-		if (activeQuestion > 0) setActiveQuestion(activeQuestion - 1);
+		if (activeQuestion > 0) {
+			setActiveQuestion(activeQuestion - 1);
+		}
 	};
+
 	const handleSetActive = (i: number) => {
-		markSkippedIfNeeded(activeQuestion);
 		setActiveQuestion(i);
 	};
 
-	/* ---------------- RENDER ---------------- */
-	if (questions.length === 0) {
+	/* ---------------- SKIPPED TRACKING ---------------- */
+	useEffect(() => {
+		if (!sessionLoaded) return;
+
+		setSkippedQuestions(() => {
+			const newSkipped = new Set<number>();
+			questions.forEach((q, idx) => {
+				if (!q.user_options || q.user_options.length === 0) {
+					newSkipped.add(idx);
+				}
+			});
+			return newSkipped;
+		});
+
+		saveSessionState();
+	}, [activeQuestion, questions, sessionLoaded]);
+
+	/* ---------------- LOADING STATE ---------------- */
+	if (!sessionLoaded || questions.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-screen">
-				Loading quiz...
+				<div className="text-center">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+					<p>Loading quiz...</p>
+				</div>
 			</div>
 		);
 	}
 
+	const selectedOptions: Record<number, number[]> = {};
+	questions.forEach((q, index) => {
+		selectedOptions[index] = q.user_options || [];
+	});
+
 	return (
 		<>
-			{/* MODAL */}
 			<WarningModal
 				open={showWarning}
 				message={warningMessage}
@@ -316,6 +340,9 @@ const Quiz: React.FC = () => {
 							userId={user?._id ?? ""}
 							quizId={user?.quizId ?? ""}
 							onTimeUp={handleTimeUp}
+							onWarn={() => {
+								toast.warning("⚠️ Only 20 seconds left! Hurry up.");
+							}}
 						/>
 						<button
 							onClick={handleSubmit}
@@ -345,7 +372,7 @@ const Quiz: React.FC = () => {
 							<span className="font-semibold">
 								Question {activeQuestion + 1}
 							</span>
-							<div className="font-semibold overflow-hidden">
+							<div className="font-semibold overflow-auto">
 								{parse(questions[activeQuestion]?.question ?? "")}
 							</div>
 						</div>
@@ -353,10 +380,11 @@ const Quiz: React.FC = () => {
 						{/* OPTIONS */}
 						<div className="w-1/2 flex flex-col p-10 gap-3">
 							<span className="font-semibold">Answer</span>
-							<div className="flex flex-col gap-6">
-								{questions[activeQuestion]?.options.map((opt, i) => {
+							<div className="flex flex-col gap-6 overflow-auto">
+								{questions[activeQuestion]?.options?.map((opt, i) => {
 									const isChecked =
-										selectedOptions[activeQuestion]?.includes(i) || false;
+										questions[activeQuestion]?.user_options?.includes(i) ||
+										false;
 									const isMultiple =
 										questions[activeQuestion]?.multiple ?? false;
 									const id = `quiz-${activeQuestion}-${i}`;
@@ -364,23 +392,25 @@ const Quiz: React.FC = () => {
 									return (
 										<div
 											key={i}
-											className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer ${
-												isChecked ? "!border-black" : ""
+											className={`hover:bg-neutral-100 flex gap-2 items-center border border-neutral-800/30 rounded-md px-4 py-3 cursor-pointer transition-colors ${
+												isChecked ? "!border-black bg-neutral-100" : ""
 											}`}
 											onClick={() => handleOptionChange(i)}
 										>
 											<input
 												type={isMultiple ? "checkbox" : "radio"}
 												id={id}
-												name={`quiz-${activeQuestion}`}
+												name={
+													!isMultiple ? `quiz-${activeQuestion}` : undefined
+												}
 												className="w-5 h-5 accent-black rounded focus:ring-0 focus:border-black"
 												checked={isChecked}
 												onChange={() => handleOptionChange(i)}
-												onClick={(e) => e.stopPropagation()}
 											/>
+
 											<label
 												htmlFor={id}
-												className="text-neutral-800 select-none cursor-pointer"
+												className="text-neutral-800 select-none cursor-pointer flex-1"
 											>
 												{opt}
 											</label>
@@ -393,40 +423,21 @@ const Quiz: React.FC = () => {
 				</div>
 
 				{/* FOOTER NAV */}
-				{/* <div className="w-full flex justify-end mb-10 gap-3 px-4 py-2">
-					<button
-						onClick={handlePrevious}
-						disabled={activeQuestion === 0}
-						className="bg-black text-white px-4 py-2 rounded-md disabled:opacity-50"
-					>
-						Previous
-					</button>
-					<button
-						onClick={handleNext}
-						disabled={activeQuestion === questions.length - 1}
-						className="bg-accent px-4 py-2 rounded-md disabled:opacity-50"
-					>
-						Next
-					</button>
-				</div> */}
-				{/* FOOTER NAV */}
 				<div className="w-full flex justify-end mb-10 gap-3 px-4 py-2">
-					{/* <div> */}
 					<button
 						onClick={handlePrevious}
 						disabled={activeQuestion === 0}
-						className="bg-black text-white px-4 py-2 rounded-md disabled:opacity-50"
+						className="bg-black text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
 					>
 						Previous
 					</button>
 					<button
 						onClick={handleNext}
 						disabled={activeQuestion === questions.length - 1}
-						className="bg-accent px-4 py-2 rounded-md disabled:opacity-50"
+						className="bg-accent px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
 					>
 						Next
 					</button>
-					{/* </div> */}
 				</div>
 			</div>
 		</>

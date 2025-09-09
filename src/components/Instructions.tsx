@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { Navigate } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
 import {
 	Timer,
@@ -9,12 +9,13 @@ import {
 	ChevronUp,
 	ChevronDown,
 } from "lucide-react";
+
 const Instructions: React.FC = () => {
-	const navigate = useNavigate();
 	const { user, isLoading } = useUserAuth();
 
 	const [openIndex, setOpenIndex] = useState<number | null>(0);
 	const [isStarting, setIsStarting] = useState(false);
+	const [redirectToQuiz, setRedirectToQuiz] = useState(false);
 
 	const toggleDropdown = (index: number) => {
 		setOpenIndex(openIndex === index ? null : index);
@@ -28,7 +29,7 @@ const Instructions: React.FC = () => {
 		try {
 			const { _id: userId, quizId, quizDuration } = user;
 
-			const res = await fetch("/api/quiz-session", {
+			const res = await fetch("/api/create-quiz-session", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ userId, quizId, quizDuration }),
@@ -40,9 +41,10 @@ const Instructions: React.FC = () => {
 				return;
 			}
 
-			navigate("/");
+			setRedirectToQuiz(true);
 		} catch (err) {
 			console.error("Error creating quiz session:", err);
+			setIsStarting(false);
 		} finally {
 			setIsStarting(false);
 		}
@@ -50,6 +52,10 @@ const Instructions: React.FC = () => {
 
 	if (isLoading) {
 		return <div>Loading...</div>;
+	}
+
+	if (redirectToQuiz) {
+		return <Navigate to="/quiz" replace />;
 	}
 
 	const guidelines = [
@@ -74,6 +80,7 @@ const Instructions: React.FC = () => {
 	return (
 		<div className="w-screen h-dvh flex p-8">
 			<div className="flex w-full h-full border border-neutral-300 rounded-md overflow-hidden">
+				{/* Left side */}
 				<div className="flex flex-col w-1/2 h-full p-4 gap-4 bg-neutral-100">
 					<div className="flex text-xl">
 						<p className="font-bold">QUIZ</p>
@@ -144,6 +151,8 @@ const Instructions: React.FC = () => {
 						</span>
 					</div>
 				</div>
+
+				{/* Right side */}
 				<div className="w-1/2 p-3 h-full flex flex-col justify-between">
 					<div className="w-full ">
 						<div className="w-full flex flex-col gap-3">

@@ -26,6 +26,7 @@ const UserProtectedRoute = () => {
 
 				if (res.ok) {
 					const data = await res.json();
+					console.log("check-session data", data);
 					setCompleted(!!data.completed);
 				} else {
 					setCompleted(false);
@@ -50,20 +51,18 @@ const UserProtectedRoute = () => {
 	}
 
 	if (!user) {
-		return <Navigate to="/user-login" replace />;
+		return <Navigate to="/" replace />;
 	}
 
-	// 2. Protect /test route
-	if (location.pathname === "/test") {
-		if (!completed) {
-			// quiz not completed → redirect to quiz
-			return <Navigate to="/" replace />;
-		}
+	if (
+		(location.pathname === "/quiz" || location.pathname === "/instructions") &&
+		completed
+	) {
+		return <Navigate to="/submission" replace />;
 	}
 
-	// 3. After completing quiz, prevent returning to quiz (redirect to test)
-	if (location.pathname === "/" && completed) {
-		return <Navigate to="/test" replace />;
+	if (location.pathname === "/submission" && !completed) {
+		return <Navigate to="/quiz" replace />;
 	}
 
 	return <Outlet />;

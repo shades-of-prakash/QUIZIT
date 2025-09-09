@@ -55,7 +55,7 @@ export default function Createquiz() {
 		error,
 		refetch,
 	} = useQuery<Quiz[], Error>({
-		queryKey: ["quizzes"],
+		queryKey: ["quizzes1"],
 		queryFn: fetchQuizzes,
 	});
 
@@ -183,7 +183,7 @@ const QuizTable = ({
 	return (
 		<div className="overflow-hidden rounded-md border border-gray-300 shadow-sm">
 			<table className="w-full text-sm">
-				<thead className="bg-neutral-100">
+				<thead className="bg-black/90 text-gray-300">
 					<tr>
 						<th className="px-4 py-2 text-left">#</th>
 						<th className="px-4 py-2 text-left">Name</th>

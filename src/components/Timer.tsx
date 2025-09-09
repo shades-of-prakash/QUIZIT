@@ -1,4 +1,3 @@
-// Timer.tsx
 import React, { useEffect, useState } from "react";
 import { Timer as TimerIcon } from "lucide-react";
 
@@ -6,12 +5,12 @@ type TimerProps = {
 	userId: string;
 	quizId: string;
 	onTimeUp: () => void;
+	onWarn?: () => void;
 };
 
-const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
+const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
 	const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-	// Fetch initial time
 	useEffect(() => {
 		const initTimer = async () => {
 			try {
@@ -42,12 +41,16 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 			return;
 		}
 
+		if (timeLeft === 20) {
+			onWarn?.();
+		}
+
 		const interval = setInterval(() => {
 			setTimeLeft((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
 		}, 1000);
 
 		return () => clearInterval(interval);
-	}, [timeLeft, onTimeUp]);
+	}, [timeLeft, onWarn, onTimeUp]);
 
 	// Heartbeat to server every 30s + on unmount
 	useEffect(() => {
@@ -83,6 +86,10 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 	const mins = Math.floor((timeLeft % 3600) / 60);
 	const secs = timeLeft % 60;
 
+	const timeTextClass = `text-xl transition-colors duration-500 ${
+		timeLeft <= 300 ? "text-red-600" : ""
+	}`;
+
 	return (
 		<div className="text-2xl font-bold flex items-center justify-center gap-3">
 			<TimerIcon size={36} className="text-accent" />
@@ -92,17 +99,23 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp }) => {
 			</div>
 			<div className="w-[150px] flex items-center justify-center p-2 text-sm gap-2 bg-neutral-100 border border-neutral-300 rounded-md">
 				<div className="flex flex-col items-center">
-					<span className="text-xl">{hrs.toString().padStart(2, "0")}</span>
+					<span className={timeTextClass}>
+						{hrs.toString().padStart(2, "0")}
+					</span>
 					<span className="text-[10px] font-light">hrs</span>
 				</div>
 				<div>:</div>
 				<div className="flex flex-col items-center">
-					<span className="text-xl">{mins.toString().padStart(2, "0")}</span>
+					<span className={timeTextClass}>
+						{mins.toString().padStart(2, "0")}
+					</span>
 					<span className="text-[10px] font-light">min</span>
 				</div>
 				<div>:</div>
 				<div className="flex flex-col items-center">
-					<span className="text-xl">{secs.toString().padStart(2, "0")}</span>
+					<span className={timeTextClass}>
+						{secs.toString().padStart(2, "0")}
+					</span>
 					<span className="text-[10px] font-light">sec</span>
 				</div>
 			</div>

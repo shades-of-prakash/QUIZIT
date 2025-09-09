@@ -16,7 +16,9 @@ import UserProtectedRoute from "./components/UserProtectedRoute";
 import Instructions from "./components/Instructions";
 import Redirect from "./components/Redirect";
 import Submission from "./components/Submission";
+// import WarningModal from "./components/Warn";
 const queryClient = new QueryClient();
+
 const Noise = () => {
 	return (
 		<div className="w-screen h-screen">
@@ -48,6 +50,7 @@ const Noise = () => {
 		</div>
 	);
 };
+
 export function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
@@ -56,24 +59,23 @@ export function App() {
 					<BrowserRouter>
 						<Toaster position="top-center" richColors />
 						<Routes>
-							{/* <Route element={<UserProtectedRoute />}>
+							<Route element={<UserProtectedRoute />}>
 								<Route path="/instructions" element={<Instructions />} />
-							</Route> */}
-							<Route path="/instructions" element={<Instructions />} />
+							</Route>
 
 							<Route
-								path="/user-login"
+								path="/"
 								element={
 									<Redirect>
 										<Login />
 									</Redirect>
 								}
 							/>
+
 							<Route element={<UserProtectedRoute />}>
-								<Route path="/" element={<Quiz />} />
+								<Route path="/quiz" element={<Quiz />} />
 								<Route path="/submission" element={<Submission />} />
 							</Route>
-
 
 							<Route path="/admin-login" element={<AdminLogin />} />
 

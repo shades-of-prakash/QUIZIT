@@ -1,76 +1,12 @@
-import { useState, useRef, useEffect, type ChangeEvent } from "react";
-import { X, Upload, ChevronDown } from "lucide-react";
+import { useState, type ChangeEvent } from "react";
+import { X, Upload } from "lucide-react";
 import Papa from "papaparse";
 import { toast } from "sonner";
+import CustomSelect from "./CustomSelect";
 
 interface CreateQuizModalProps {
 	onClose: () => void;
 	refreshQuizzes: () => void;
-}
-
-interface CustomSelectProps {
-	value: string;
-	onChange: (value: string) => void;
-	options: { value: string; label: string }[];
-	placeholder?: string;
-	className?: string;
-}
-
-function CustomSelect({ value, onChange, options, placeholder, className = "" }: CustomSelectProps) {
-	const [isOpen, setIsOpen] = useState(false);
-	const selectRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
-				setIsOpen(false);
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, []);
-
-	const selectedOption = options.find(option => option.value === value);
-
-	return (
-		<div className={`relative ${className}`} ref={selectRef}>
-			<button
-				type="button"
-				onClick={() => setIsOpen(!isOpen)}
-				className="w-full border border-neutral-800/30 px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors"
-			>
-				<span className={selectedOption ? "text-black" : "text-neutral-500"}>
-					{selectedOption ? selectedOption.label : placeholder}
-				</span>
-				<ChevronDown 
-					className={`w-4 h-4 text-neutral-600 transition-transform duration-200 ${
-						isOpen ? "rotate-180" : ""
-					}`} 
-				/>
-			</button>
-
-			{isOpen && (
-				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-					{options.map((option) => (
-						<button
-							key={option.value}
-							type="button"
-							onClick={() => {
-								onChange(option.value);
-								setIsOpen(false);
-							}}
-							className={`w-full px-4 py-2 text-left hover:bg-neutral-100 transition-colors first:rounded-t-md last:rounded-b-md ${
-								value === option.value ? "bg-blue-50 text-blue-700" : "text-black"
-							}`}
-						>
-							{option.label}
-						</button>
-					))}
-				</div>
-			)}
-		</div>
-	);
 }
 
 export default function CreateQuizModal({
@@ -81,13 +17,13 @@ export default function CreateQuizModal({
 	const [quizName, setQuizName] = useState("");
 	const [questions, setQuestions] = useState("");
 	const [duration, setDuration] = useState("");
-	const [teamSize, setTeamSize] = useState("1");
+	const [teamSize, setTeamSize] = useState("");
 	const [parsedData, setParsedData] = useState<any[]>([]);
 	const [loading, setLoading] = useState(false);
 
 	const teamSizeOptions = [
 		{ value: "1", label: "Individual" },
-		{ value: "2", label: "Duo" }
+		{ value: "2", label: "Duo" },
 	];
 
 	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -99,29 +35,62 @@ export default function CreateQuizModal({
 				header: true,
 				skipEmptyLines: true,
 				complete: (result) => {
-					const formatted = result.data.map((row: any) => {
-						const options = [
-							row.option1,
-							row.option2,
-							row.option3,
-							row.option4,
-						].filter(Boolean);
+					try {
+						const formatted = result.data.map((row: any, index: number) => {
+							const rowNumber = index + 2;
+							console.log("row", row);
+							const options = [
+								row.option1,
+								row.option2,
+								row.option3,
+								row.option4,
+							].filter(Boolean);
 
-						const correctOptions = row.correctoption
-							? row.correctoption.split("|").map((opt: string) => opt.trim())
-							: [];
+							let correctOptions: number[] = [];
 
-						return {
-							sno: row.sno,
-							question: row.question,
-							options,
-							correct_options: correctOptions,
-							multiple: String(row.multiple).toLowerCase() === "true",
-						};
-					});
+							if (row.correctoptions) {
+								const rawValue = String(row.correctoptions).trim();
 
-					setParsedData(formatted);
-					console.log("Parsed CSV:", formatted);
+								const regex = /^[0-9]+(?:\|[0-9]+)*$/;
+
+								if (!regex.test(rawValue)) {
+									throw new Error(
+										`Error at row ${rowNumber}: correct_options must only contain numbers like "1" or "1|2".`
+									);
+								}
+								correctOptions = rawValue
+									.split("|")
+									.map((opt: string) => parseInt(opt, 10) - 1)
+									.map((num: number) => {
+										if (num < 0 || num >= options.length) {
+											throw new Error(
+												`Error at row ${rowNumber}: correct_options contains a number outside the valid range (1–${options.length}).`
+											);
+										}
+										return num;
+									});
+							}
+
+							return {
+								sno: row.sno,
+								question: row.question,
+								options,
+								correct_options: correctOptions,
+								multiple: String(row.multiple).toLowerCase() === "true",
+							};
+						});
+
+						setParsedData(formatted);
+						console.log("Parsed CSV:", formatted);
+					} catch (err: any) {
+						const message =
+							typeof err.message === "string"
+								? err.message
+								: "Error: Invalid correct_options format.";
+						toast.error(message);
+						setParsedData([]);
+						setSelectedFile(null);
+					}
 				},
 			});
 		}
@@ -131,7 +100,8 @@ export default function CreateQuizModal({
 		Boolean(selectedFile) &&
 		quizName.trim().length > 0 &&
 		questions.trim().length > 0 &&
-		duration.trim().length > 0;
+		duration.trim().length > 0 &&
+		teamSize.trim().length > 0;
 
 	const handleCreateQuiz = async () => {
 		if (!isFormValid) return;
@@ -150,7 +120,7 @@ export default function CreateQuizModal({
 					duration: parseInt(duration),
 					quizQuestions: parseInt(questions),
 					totalQuestions: parsedData.length,
-					teamSize: parseInt(teamSize), 
+					teamSize: parseInt(teamSize),
 					questions: parsedData,
 				}),
 			});
@@ -191,7 +161,9 @@ export default function CreateQuizModal({
 					<div className="w-1/2 flex-1 rounded-md p-4 pr-3">
 						<div className="w-full h-full flex flex-col items-center justify-center rounded-md bg-[#8fd45a2e] border border-dashed border-neutral-500 p-4">
 							<Upload className="w-10 h-10 text-neutral-600 mb-2" />
-							<p className="text-base text-neutral-600">Upload your quiz file</p>
+							<p className="text-base text-neutral-600">
+								Upload your quiz file
+							</p>
 
 							<input
 								id="file-upload"
@@ -211,7 +183,7 @@ export default function CreateQuizModal({
 							</label>
 
 							{selectedFile && (
-								<p className="mt-3 text-sm text-white text-center bg-black border rounded-md py-1 px-2">
+								<p className="mt-3  text-2xl text-black b text-center bg-transparent border border-neutral-800/40 rounded-md py-1 px-2">
 									{selectedFile.name}
 								</p>
 							)}

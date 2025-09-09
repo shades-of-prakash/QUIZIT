@@ -324,63 +324,6 @@ export async function getQuizNames(req: Request): Promise<Response> {
 	}
 }
 
-// export async function createQuizSessionController(req: Request) {
-// 	try {
-// 		const body = await req.json();
-// 		const { userId, quizId, quizDuration } = body;
-
-// 		if (!userId || !quizId || !quizDuration) {
-// 			return new Response(
-// 				JSON.stringify({ error: "Missing userId, quizId, or quizDuration" }),
-// 				{ status: 400, headers: { "Content-Type": "application/json" } }
-// 			);
-// 		}
-
-// 		const existingSession = await quizSessionCollection().findOne({
-// 			userId,
-// 			quizId,
-// 		});
-
-// 		console.log("exist", existingSession);
-
-// 		if (existingSession?.completed) {
-// 			return new Response(JSON.stringify({ error: "Quiz already completed" }), {
-// 				status: 403,
-// 				headers: { "Content-Type": "application/json" },
-// 			});
-// 		}
-
-// 		const startTime = Date.now();
-// 		const endTime = startTime + quizDuration * 60 * 1000;
-
-// 		await quizSessionCollection().updateOne(
-// 			{ userId, quizId },
-// 			{
-// 				$set: {
-// 					userId,
-// 					quizId,
-// 					startTime,
-// 					endTime,
-// 					quizDuration,
-// 					completed: false,
-// 				},
-// 			},
-// 			{ upsert: true }
-// 		);
-
-// 		return new Response(
-// 			JSON.stringify({ userId, quizId, startTime, endTime, quizDuration }),
-// 			{ status: 200, headers: { "Content-Type": "application/json" } }
-// 		);
-// 	} catch (err) {
-// 		console.error("DB error", err);
-// 		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-// 			status: 500,
-// 			headers: { "Content-Type": "application/json" },
-// 		});
-// 	}
-// }
-
 export async function createQuizSessionController(req: Request) {
 	try {
 		const body = await req.json();
@@ -398,6 +341,8 @@ export async function createQuizSessionController(req: Request) {
 			quizId,
 		});
 
+		console.log(existingSession);
+
 		if (existingSession?.completed) {
 			return new Response(JSON.stringify({ error: "Quiz already completed" }), {
 				status: 403,
@@ -405,22 +350,70 @@ export async function createQuizSessionController(req: Request) {
 			});
 		}
 
-		await quizSessionCollection().updateOne(
-			{ userId, quizId },
-			{
-				$setOnInsert: {
-					userId,
-					quizId,
-					remainingSeconds: quizDuration * 60,
-					lastUpdated: Date.now(),
-					completed: false,
-				},
-			},
-			{ upsert: true }
-		);
+		let questions: any[] = [];
 
+		if (existingSession) {
+			questions = existingSession.questions.map((q: any) => ({
+				...q,
+				user_options: Array.isArray(q.user_options) ? q.user_options : [],
+			}));
+
+			const needsUpdate = existingSession.questions.some(
+				(q: any) => !Array.isArray(q.user_options)
+			);
+
+			if (needsUpdate) {
+				await quizSessionCollection().updateOne(
+					{ _id: existingSession._id },
+					{ $set: { questions } }
+				);
+			}
+		} else {
+			const quiz = await quizzesCollection().findOne({
+				_id: ObjectId.createFromHexString(quizId),
+			});
+
+			if (!quiz) {
+				return new Response(JSON.stringify({ error: "Quiz not found" }), {
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				});
+			}
+
+			const shuffled = [...quiz.questions].sort(() => 0.5 - Math.random());
+			questions = shuffled
+				.slice(0, quiz.quizQuestions)
+				.map(({ correct_options, ...q }) => ({
+					...q,
+					user_options: [],
+				}));
+
+			await quizSessionCollection().insertOne({
+				userId,
+				quizId,
+				questions,
+				remainingSeconds: quizDuration * 60,
+				lastUpdated: Date.now(),
+				completed: false,
+				activeQuestion: 0,
+				skippedQuestions: [],
+			});
+		}
+
+		console.log("questions", { questions });
 		return new Response(
-			JSON.stringify({ userId, quizId, remainingSeconds: quizDuration * 60 }),
+			JSON.stringify({
+				userId,
+				quizId,
+				questions,
+				remainingSeconds: existingSession
+					? existingSession.remainingSeconds
+					: quizDuration * 60,
+				lastUpdated: existingSession?.lastUpdated ?? Date.now(),
+				activeQuestion: existingSession?.activeQuestion ?? 0,
+				skippedQuestions: existingSession?.skippedQuestions ?? [],
+				completed: existingSession?.completed ?? false,
+			}),
 			{ status: 200, headers: { "Content-Type": "application/json" } }
 		);
 	} catch (err) {
@@ -431,52 +424,6 @@ export async function createQuizSessionController(req: Request) {
 		});
 	}
 }
-
-// export async function getServerTimeController(req: Request) {
-// 	return new Response(JSON.stringify({ serverTime: Date.now() }), {
-// 		status: 200,
-// 		headers: { "Content-Type": "application/json" },
-// 	});
-// }
-
-// export async function getQuizEndTimeController(req: Request) {
-// 	const url = new URL(req.url);
-// 	const userId = url.searchParams.get("userId");
-// 	const quizId = url.searchParams.get("quizId");
-
-// 	if (!userId || !quizId) {
-// 		return new Response(JSON.stringify({ error: "Missing userId or quizId" }), {
-// 			status: 400,
-// 		});
-// 	}
-
-// 	try {
-// 		const session = await quizSessionCollection().findOne({ userId, quizId });
-
-// 		if (!session || !session.startTime || !session.quizDuration) {
-// 			return new Response(JSON.stringify({ error: "Session not found" }), {
-// 				status: 404,
-// 			});
-// 		}
-
-// 		const startTime =
-// 			session.startTime instanceof Date
-// 				? session.startTime.getTime()
-// 				: session.startTime;
-
-// 		const endTime = startTime + session.quizDuration * 60 * 1000;
-
-// 		return new Response(JSON.stringify({ endTime }), {
-// 			status: 200,
-// 			headers: { "Content-Type": "application/json" },
-// 		});
-// 	} catch (err) {
-// 		console.error("DB error", err);
-// 		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-// 			status: 500,
-// 		});
-// 	}
-// }
 
 export async function getQuizRemainingTimeController(req: Request) {
 	const url = new URL(req.url);
@@ -580,15 +527,22 @@ export async function checkSessionController(req: Request) {
 export async function submitQuizController(req: Request) {
 	try {
 		const body = await req.json();
-		const { userId, quizId, answers, participant1, participant2, email } = body;
+		const {
+			userId,
+			quizId,
+			participant1Name,
+			participant1RollNo,
+			participant2Name,
+			participant2RollNo,
+			email,
+		} = body;
 
-		if (!userId || !quizId || !answers) {
+		if (!userId || !quizId || !participant1Name || !participant1RollNo) {
 			return new Response(
-				JSON.stringify({ error: "Missing userId, quizId, or answers" }),
+				JSON.stringify({ error: "Missing required fields" }),
 				{ status: 400, headers: { "Content-Type": "application/json" } }
 			);
 		}
-		console.log("tesyynh", userId);
 
 		const now = Date.now();
 
@@ -597,12 +551,21 @@ export async function submitQuizController(req: Request) {
 				userId,
 				quizId,
 				completed: false,
-				endTime: { $gt: now },
+				$expr: {
+					$gt: [
+						{
+							$add: [
+								"$lastUpdated",
+								{ $multiply: ["$remainingSeconds", 1000] },
+							],
+						},
+						now,
+					],
+				},
 			},
 			{ $set: { completed: true } },
 			{ returnDocument: "after" }
 		);
-		console.log("session", session);
 
 		if (!session) {
 			return new Response(
@@ -611,17 +574,30 @@ export async function submitQuizController(req: Request) {
 			);
 		}
 
+		if (!Array.isArray(session.questions) || session.questions.length === 0) {
+			return new Response(
+				JSON.stringify({ error: "No questions found in session" }),
+				{ status: 400, headers: { "Content-Type": "application/json" } }
+			);
+		}
+
+		const submissionData: Record<string, any> = {
+			userId,
+			quizId,
+			questions: session.questions,
+			participant1Name,
+			participant1RollNo,
+			email,
+			submittedAt: now,
+		};
+
+		if (participant2Name) submissionData.participant2Name = participant2Name;
+		if (participant2RollNo)
+			submissionData.participant2RollNo = participant2RollNo;
+
 		await quizSubmission().updateOne(
 			{ userId, quizId },
-			{
-				$set: {
-					answers,
-					participant1,
-					participant2,
-					email,
-					submittedAt: now,
-				},
-			},
+			{ $set: submissionData },
 			{ upsert: true }
 		);
 
@@ -630,7 +606,54 @@ export async function submitQuizController(req: Request) {
 			{ status: 200, headers: { "Content-Type": "application/json" } }
 		);
 	} catch (err) {
-		console.error("Submit error", err);
+		console.error("Submit error:", err);
+		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+			status: 500,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+}
+
+export async function saveSessionStateController(req: Request) {
+	try {
+		const body = await req.json();
+		const { userId, quizId, questions, activeQuestion, skippedQuestions } =
+			body;
+
+		if (!userId || !quizId) {
+			return new Response(
+				JSON.stringify({ error: "Missing userId or quizId" }),
+				{ status: 400, headers: { "Content-Type": "application/json" } }
+			);
+		}
+
+		// ensure session exists
+		const session = await quizSessionCollection().findOne({ userId, quizId });
+		if (!session) {
+			return new Response(
+				JSON.stringify({ error: "No active quiz session found" }),
+				{ status: 404, headers: { "Content-Type": "application/json" } }
+			);
+		}
+
+		const updates: any = { lastUpdated: Date.now() };
+
+		if (questions !== undefined) updates.questions = questions;
+		if (activeQuestion !== undefined) updates.activeQuestion = activeQuestion;
+		if (skippedQuestions !== undefined)
+			updates.skippedQuestions = skippedQuestions;
+
+		await quizSessionCollection().updateOne(
+			{ userId, quizId },
+			{ $set: updates }
+		);
+
+		return new Response(JSON.stringify({ success: true }), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		});
+	} catch (err) {
+		console.error("Error saving session state:", err);
 		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
 			status: 500,
 			headers: { "Content-Type": "application/json" },
@@ -646,59 +669,84 @@ export async function getQuizResultsController(req: Request) {
 		if (!quizId) {
 			return new Response(JSON.stringify({ error: "Missing quizId" }), {
 				status: 400,
-				headers: { "Content-Type": "application/json" },
 			});
 		}
 
 		const submissions = await quizSubmission().find({ quizId }).toArray();
-
 		if (!submissions || submissions.length === 0) {
 			return new Response(JSON.stringify({ error: "No submissions found" }), {
 				status: 404,
-				headers: { "Content-Type": "application/json" },
 			});
 		}
 
 		const quiz = await quizzesCollection().findOne({
-			_id: ObjectId.createFromHexString(quizId),
+			_id: new ObjectId(quizId),
 		});
 		if (!quiz || !quiz.questions) {
 			return new Response(JSON.stringify({ error: "Quiz not found" }), {
 				status: 404,
-				headers: { "Content-Type": "application/json" },
 			});
 		}
 
+		const quizQuestionsMap: Record<string, any> = {};
+		quiz.questions.forEach((q: any) => {
+			quizQuestionsMap[q.sno] = q;
+		});
+
 		const results = await Promise.all(
-			submissions.map(async (submission: any, index: number) => {
+			submissions.map(async (submission: any) => {
 				let score = 0;
 
-				quiz.questions.forEach((q: any, qIndex: number) => {
-					const userAnswer = submission.answers[qIndex] || [];
-					const correct = Array.isArray(q.correctAnswers)
-						? q.correctAnswers
-						: [q.correctAnswers];
+				for (const key in submission.answers) {
+					const userAnswer = submission.answers[key] || [];
+					const question = quizQuestionsMap[key];
+					if (!question) continue;
+
+					const correct = Array.isArray(question.correct_options)
+						? question.correct_options
+						: [question.correct_options];
 
 					const isCorrect =
 						userAnswer.length === correct.length &&
 						userAnswer.every((val: number) => correct.includes(val));
 
 					if (isCorrect) score++;
-				});
-				console.log("submission", submission.userId);
-				const user = await usersCollection().findOne({
-					_id: ObjectId.createFromHexString(submission.userId),
+				}
+
+				const submittedAtRaw = submission.submittedAt || null;
+				const submittedAtFormatted = submittedAtRaw
+					? new Date(submittedAtRaw).toLocaleString()
+					: null;
+
+				// Fetch session to get remainingSeconds
+				const session = await quizSessionCollection().findOne({
+					quizId,
+					userId: submission.userId,
 				});
 
-				console.log("userfrom results controller", user);
+				let timeConsumedMinutes: number | null = null;
+				let timeConsumedFormatted: string | null = null;
+
+				if (quiz.duration && session?.remainingSeconds != null) {
+					const totalSeconds = quiz.duration * 60;
+					const consumedSeconds = totalSeconds - session.remainingSeconds;
+
+					timeConsumedMinutes = Math.floor(consumedSeconds / 60);
+					timeConsumedFormatted = `${timeConsumedMinutes} min`;
+				}
 
 				return {
-					participant1: user?.participant1,
-					participant2: user?.participant2,
 					userId: submission.userId,
-					email: user?.email || "N/A",
+					email: submission.email || "N/A",
+					participant1Name: submission.participant1Name,
+					participant1RollNo: submission.participant1RollNo,
+					participant2Name: submission.participant2Name || null,
+					participant2RollNo: submission.participant2RollNo || null,
 					score,
-					submittedAt: submission.submittedAt || null,
+					submittedAt: submittedAtRaw,
+					submittedAtFormatted,
+					timeConsumedMinutes,
+					timeConsumedFormatted,
 				};
 			})
 		);
@@ -711,10 +759,10 @@ export async function getQuizResultsController(req: Request) {
 		console.error("Get quiz results error", err);
 		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
 			status: 500,
-			headers: { "Content-Type": "application/json" },
 		});
 	}
 }
+
 export async function deleteQuizController(req: Request) {
 	// const { unauthorizedResponse } = await authMiddleware(req);
 	// if (unauthorizedResponse) return unauthorizedResponse;
@@ -761,5 +809,47 @@ export async function deleteQuizController(req: Request) {
 				headers: { "Content-Type": "application/json" },
 			}
 		);
+	}
+}
+export async function getSessionController(req: Request) {
+	try {
+		const url = new URL(req.url);
+		const userId = url.searchParams.get("userId");
+		const quizId = url.searchParams.get("quizId");
+
+		if (!userId || !quizId) {
+			return new Response(
+				JSON.stringify({ error: "Missing userId or quizId" }),
+				{ status: 400 }
+			);
+		}
+
+		const session = await quizSessionCollection().findOne({ userId, quizId });
+
+		if (!session) {
+			return new Response(
+				JSON.stringify({ error: "No active session found" }),
+				{ status: 404 }
+			);
+		}
+
+		return new Response(
+			JSON.stringify({
+				userId: session.userId,
+				quizId: session.quizId,
+				remainingSeconds: session.remainingSeconds,
+				completed: session.completed || false,
+				questions: session.questions,
+				activeQuestion: session.activeQuestion,
+				skippedQuestions: session.skippedQuestions,
+				lastUpdated: session.lastUpdated,
+			}),
+			{ status: 200 }
+		);
+	} catch (err) {
+		console.error("Error fetching session:", err);
+		return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+			status: 500,
+		});
 	}
 }

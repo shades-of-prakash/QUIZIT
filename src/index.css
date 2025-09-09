@@ -11,7 +11,7 @@
 
 :root {
 	--accent-color: rgb(142, 212, 89);
-	--accent-light-color: rgb(154, 231, 95);
+	--accent-light-color: rgb(139, 236, 65);
 	--coor: #8fd45a6c;
 	--code-bg-color: #27282c;
 }
@@ -52,5 +52,8 @@ pre[class*="language-"]::-webkit-scrollbar-thumb {
 	.box {
 		box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
 			rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+	}
+	.gradient {
+		background: linear-gradient(220.55deg, #b9a14c 0%, #000000 100%);
 	}
 }
