@@ -11,7 +11,7 @@ import "prismjs/components/prism-c";
 import { useUserAuth } from "../context/userAuthContext";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { TriangleAlert } from "lucide-react";
+import WarningModal from "./WarningModal";
 
 type Question = {
 	sno?: string;
@@ -19,39 +19,6 @@ type Question = {
 	options?: string[];
 	multiple?: boolean;
 	user_options?: number[];
-};
-
-const WarningModal: React.FC<{
-	open: boolean;
-	message: string;
-	onClose: () => void;
-}> = ({ open, message, onClose }) => {
-	if (!open) return null;
-	return (
-		<div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-			<div className="bg-white rounded-xl shadow-xl w-[380px] p-6 text-center animate-fadeIn">
-				<div className="flex flex-col items-center justify-center gap-2 mb-4">
-					<TriangleAlert size={48} />
-					<h2 className="text-2xl font-semibold text-amber-700">Warning</h2>
-				</div>
-				<p className="flex flex-col gap-1 mb-6 text-sm text-gray-700 leading-relaxed p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-					<span>
-						You have switched tabs
-						<span className="font-semibold mx-1">{message} out of 3</span>{" "}
-						times.
-					</span>
-					<span>If it happens again, your quiz will be</span>
-					<span className="font-semibold text-red-600">auto-submitted</span>
-				</p>
-				<button
-					onClick={onClose}
-					className="w-full px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium shadow-md transition-colors"
-				>
-					I Understand
-				</button>
-			</div>
-		</div>
-	);
 };
 
 const Quiz: React.FC = () => {
@@ -73,25 +40,18 @@ const Quiz: React.FC = () => {
 	const [showWarning, setShowWarning] = useState(false);
 	const [warningMessage, setWarningMessage] = useState("");
 
-	/* ---------------- INITIALIZE SESSION ---------------- */
 	const initializeSession = async () => {
 		if (!user || !user.quizId) return;
 
 		try {
-			const res = await fetch("/api/create-quiz-session", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					userId: user._id,
-					quizId: user.quizId,
-					quizDuration: user.quizDuration || 60, // Default 60 minutes
-				}),
-				credentials: "include",
-			});
+			const res = await fetch(
+				`/api/get-session?userId=${user._id}&quizId=${user.quizId}`,
+				{ credentials: "include" }
+			);
 
 			if (!res.ok) {
 				const error = await res.json();
-				throw new Error(error.error || "Failed to initialize session");
+				throw new Error(error.error || "Failed to fetch session");
 			}
 
 			const data = await res.json();
@@ -100,16 +60,14 @@ const Quiz: React.FC = () => {
 			setRemainingSeconds(data.remainingSeconds || 0);
 			setActiveQuestion(data.activeQuestion || 0);
 			setSkippedQuestions(new Set(data.skippedQuestions || []));
-
 			setSessionLoaded(true);
 		} catch (error: any) {
-			console.error("Failed to initialize session:", error);
-			toast.error(error.message || "Failed to load quiz session");
+			console.error("Failed to load session:", error);
+			toast.error(error.message || "No active session found");
 			navigate("/");
 		}
 	};
 
-	/* ---------------- SAVE SESSION STATE ---------------- */
 	const saveSessionState = async (updatedQuestions?: Question[]) => {
 		if (!user || !user.quizId || !sessionLoaded) return;
 
@@ -134,13 +92,11 @@ const Quiz: React.FC = () => {
 		}
 	};
 
-	/* ---------------- TIMER ---------------- */
 	const handleTimeUp = () => {
 		toast.warning("⏰ Time is up! Auto-submitting your answers.");
 		handleSubmit();
 	};
 
-	/* ---------------- SUBMIT ---------------- */
 	const handleSubmit = async () => {
 		if (submitting || submitted) return;
 
@@ -197,14 +153,12 @@ const Quiz: React.FC = () => {
 		}
 	}, [user]);
 
-	/* ---------------- PRISM HIGHLIGHTING ---------------- */
 	useEffect(() => {
 		if (questions.length > 0) {
 			setTimeout(() => Prism.highlightAll(), 100);
 		}
 	}, [activeQuestion, questions]);
 
-	/* ---------------- TAB SWITCH DETECTION ---------------- */
 	useEffect(() => {
 		const handleVisibilityChange = () => {
 			if (document.hidden && sessionLoaded && !submitted) {
@@ -227,7 +181,6 @@ const Quiz: React.FC = () => {
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 	}, [sessionLoaded, submitted]);
 
-	/* ---------------- OPTION SELECT ---------------- */
 	const handleOptionChange = useCallback(
 		(optionIndex: number) => {
 			setQuestions((prevQuestions) => {
@@ -250,47 +203,59 @@ const Quiz: React.FC = () => {
 
 				updatedQuestions[activeQuestion] = currentQuestion;
 				saveSessionState(updatedQuestions);
+
+				setSkippedQuestions((prev) => {
+					const updated = new Set(prev);
+					if (
+						!currentQuestion.user_options ||
+						currentQuestion.user_options.length === 0
+					) {
+						updated.add(activeQuestion);
+					} else {
+						updated.delete(activeQuestion);
+					}
+					return updated;
+				});
+
 				return updatedQuestions;
 			});
 		},
 		[activeQuestion, saveSessionState]
 	);
 
-	/* ---------------- NAVIGATION ---------------- */
+	const updateSkippedForCurrent = () => {
+		setSkippedQuestions((prev) => {
+			const updated = new Set(prev);
+			const current = questions[activeQuestion];
+			if (!current?.user_options || current.user_options.length === 0) {
+				updated.add(activeQuestion);
+			} else {
+				updated.delete(activeQuestion);
+			}
+			return updated;
+		});
+		saveSessionState();
+	};
+
 	const handleNext = () => {
+		updateSkippedForCurrent();
 		if (activeQuestion < questions.length - 1) {
 			setActiveQuestion(activeQuestion + 1);
 		}
 	};
 
 	const handlePrevious = () => {
+		updateSkippedForCurrent();
 		if (activeQuestion > 0) {
 			setActiveQuestion(activeQuestion - 1);
 		}
 	};
 
 	const handleSetActive = (i: number) => {
+		updateSkippedForCurrent();
 		setActiveQuestion(i);
 	};
 
-	/* ---------------- SKIPPED TRACKING ---------------- */
-	useEffect(() => {
-		if (!sessionLoaded) return;
-
-		setSkippedQuestions(() => {
-			const newSkipped = new Set<number>();
-			questions.forEach((q, idx) => {
-				if (!q.user_options || q.user_options.length === 0) {
-					newSkipped.add(idx);
-				}
-			});
-			return newSkipped;
-		});
-
-		saveSessionState();
-	}, [activeQuestion, questions, sessionLoaded]);
-
-	/* ---------------- LOADING STATE ---------------- */
 	if (!sessionLoaded || questions.length === 0) {
 		return (
 			<div className="flex items-center justify-center h-screen">

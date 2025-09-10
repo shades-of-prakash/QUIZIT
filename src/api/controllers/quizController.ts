@@ -301,14 +301,15 @@ export async function getSingleQuiz(req: Request) {
 
 export async function getQuizNames(req: Request): Promise<Response> {
 	try {
-		const quizzes = await quizzesCollection()
-			.find({}, { projection: { name: 1, teamSize: 1 } })
-			.toArray();
+		const quizzes = await quizzesCollection().find({}).toArray();
+		console.log(quizzes);
 
 		const quizNames = quizzes.map((q) => ({
 			id: q._id.toString(),
 			name: q.name,
 			teamSize: q.teamSize,
+			duration: q.duration,
+			quizQuestions: q.quizQuestions,
 		}));
 
 		return new Response(JSON.stringify({ success: true, data: quizNames }), {

@@ -16,82 +16,57 @@ import UserProtectedRoute from "./components/UserProtectedRoute";
 import Instructions from "./components/Instructions";
 import Redirect from "./components/Redirect";
 import Submission from "./components/Submission";
-// import WarningModal from "./components/Warn";
-const queryClient = new QueryClient();
+import { QuizProvider } from "./context/quizNamesContext";
 
-const Noise = () => {
-	return (
-		<div className="w-screen h-screen">
-			<div className="h-full border border-green-600 bg-[#111827]">
-				<svg id="noice" className="h-full w-full">
-					<filter id="noise-filter">
-						<feTurbulence
-							type="fractalNoise"
-							baseFrequency="0.92"
-							numOctaves="4"
-							stitchTiles="stitch"
-						></feTurbulence>
-						<feColorMatrix type="saturate" values="0"></feColorMatrix>
-						<feComponentTransfer>
-							<feFuncR type="linear" slope="0.64"></feFuncR>
-							<feFuncG type="linear" slope="0.64"></feFuncG>
-							<feFuncB type="linear" slope="0.64"></feFuncB>
-							<feFuncA type="linear" slope="0.56"></feFuncA>
-						</feComponentTransfer>
-						<feComponentTransfer>
-							<feFuncR type="linear" slope="1.47" intercept="-0.23" />
-							<feFuncG type="linear" slope="1.47" intercept="-0.23" />
-							<feFuncB type="linear" slope="1.47" intercept="-0.23" />
-						</feComponentTransfer>
-					</filter>
-					<rect width="100%" height="100%" filter="url(#noise-filter)"></rect>
-				</svg>
-			</div>
-		</div>
-	);
-};
+const queryClient = new QueryClient();
 
 export function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
 				<UserAuthProvider>
-					<BrowserRouter>
-						<Toaster position="top-center" richColors />
-						<Routes>
-							<Route element={<UserProtectedRoute />}>
+					<QuizProvider>
+						<BrowserRouter>
+							<Toaster position="top-center" richColors />
+							<Routes>
+								{/* <Route element={<UserProtectedRoute />}>
+									<Route path="/instructions" element={<Instructions />} />
+								</Route> */}
 								<Route path="/instructions" element={<Instructions />} />
-							</Route>
 
-							<Route
-								path="/"
-								element={
-									<Redirect>
-										<Login />
-									</Redirect>
-								}
-							/>
+								<Route
+									path="/"
+									element={
+										<Redirect>
+											<Login />
+										</Redirect>
+									}
+								/>
 
-							<Route element={<UserProtectedRoute />}>
-								<Route path="/quiz" element={<Quiz />} />
-								<Route path="/submission" element={<Submission />} />
-							</Route>
-
-							<Route path="/admin-login" element={<AdminLogin />} />
-
-							<Route element={<ProtectedRoute />}>
-								<Route path="/admin" element={<DashboardLayout />}>
-									<Route index element={<Navigate to="Createquiz" replace />} />
-									<Route path="results" element={<Results />} />
-									<Route path="Createquiz" element={<Createquiz />} />
-									<Route
-										path="Createquiz/:id"
-										element={<SingleQuizHandler />}
-									/>
+								<Route element={<UserProtectedRoute />}>
+									<Route path="/quiz" element={<Quiz />} />
+									<Route path="/submission" element={<Submission />} />
 								</Route>
-							</Route>
-						</Routes>
-					</BrowserRouter>
+
+								<Route path="/admin-login" element={<AdminLogin />} />
+
+								<Route element={<ProtectedRoute />}>
+									<Route path="/admin" element={<DashboardLayout />}>
+										<Route
+											index
+											element={<Navigate to="Createquiz" replace />}
+										/>
+										<Route path="results" element={<Results />} />
+										<Route path="Createquiz" element={<Createquiz />} />
+										<Route
+											path="Createquiz/:id"
+											element={<SingleQuizHandler />}
+										/>
+									</Route>
+								</Route>
+							</Routes>
+						</BrowserRouter>
+					</QuizProvider>
 				</UserAuthProvider>
 			</AuthProvider>
 		</QueryClientProvider>
