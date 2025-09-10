@@ -158,7 +158,6 @@ export async function getAllQuizzes(req: Request) {
 
 	try {
 		const quizzes = await quizzesCollection().find({}).toArray();
-		console.log("quizzes", quizzes);
 
 		return new Response(JSON.stringify(quizzes), {
 			status: 200,
@@ -302,7 +301,6 @@ export async function getSingleQuiz(req: Request) {
 export async function getQuizNames(req: Request): Promise<Response> {
 	try {
 		const quizzes = await quizzesCollection().find({}).toArray();
-		console.log(quizzes);
 
 		const quizNames = quizzes.map((q) => ({
 			id: q._id.toString(),
@@ -667,13 +665,20 @@ export async function getQuizResultsController(req: Request) {
 		const url = new URL(req.url);
 		const quizId = url.searchParams.get("quizId");
 
+		console.log("quiziittjng", quizId);
 		if (!quizId) {
 			return new Response(JSON.stringify({ error: "Missing quizId" }), {
 				status: 400,
 			});
 		}
 
-		const submissions = await quizSubmission().find({ quizId }).toArray();
+		const submissions = await quizSubmission().find({ 
+			quizId, 
+			submittedAt: { $exists: true, $ne: null }
+		}).toArray();
+
+		console.log("submissions >>>", submissions);
+
 		if (!submissions || submissions.length === 0) {
 			return new Response(JSON.stringify({ error: "No submissions found" }), {
 				status: 404,
@@ -681,8 +686,9 @@ export async function getQuizResultsController(req: Request) {
 		}
 
 		const quiz = await quizzesCollection().findOne({
-			_id: new ObjectId(quizId),
+			_id: ObjectId.createFromHexString(quizId),
 		});
+
 		if (!quiz || !quiz.questions) {
 			return new Response(JSON.stringify({ error: "Quiz not found" }), {
 				status: 404,
@@ -694,65 +700,68 @@ export async function getQuizResultsController(req: Request) {
 			quizQuestionsMap[q.sno] = q;
 		});
 
-		const results = await Promise.all(
-			submissions.map(async (submission: any) => {
-				let score = 0;
+		const results = submissions.map((submission: any) => {
+			let score = 0;
 
-				for (const key in submission.answers) {
-					const userAnswer = submission.answers[key] || [];
-					const question = quizQuestionsMap[key];
-					if (!question) continue;
+			if (submission.questions && Array.isArray(submission.questions)) {
+				submission.questions.forEach((userQuestion: any) => {
+					const sno = userQuestion.sno;
+					const userAnswer = userQuestion.user_options || [];
+					const quizQuestion = quizQuestionsMap[sno];
 
-					const correct = Array.isArray(question.correct_options)
-						? question.correct_options
-						: [question.correct_options];
+					if (!quizQuestion) return;
+
+					const correct = Array.isArray(quizQuestion.correct_options)
+						? quizQuestion.correct_options
+						: [quizQuestion.correct_options];
 
 					const isCorrect =
 						userAnswer.length === correct.length &&
 						userAnswer.every((val: number) => correct.includes(val));
 
 					if (isCorrect) score++;
-				}
-
-				const submittedAtRaw = submission.submittedAt || null;
-				const submittedAtFormatted = submittedAtRaw
-					? new Date(submittedAtRaw).toLocaleString()
-					: null;
-
-				// Fetch session to get remainingSeconds
-				const session = await quizSessionCollection().findOne({
-					quizId,
-					userId: submission.userId,
 				});
+			}
 
-				let timeConsumedMinutes: number | null = null;
-				let timeConsumedFormatted: string | null = null;
+			const submittedAtRaw = submission.submittedAt || null;
+			const submittedAtFormatted = submittedAtRaw
+				? new Date(submittedAtRaw).toLocaleString()
+				: null;
 
-				if (quiz.duration && session?.remainingSeconds != null) {
-					const totalSeconds = quiz.duration * 60;
-					const consumedSeconds = totalSeconds - session.remainingSeconds;
+			let timeConsumedMinutes: number | null = null;
+			let timeConsumedFormatted: string | null = null;
 
-					timeConsumedMinutes = Math.floor(consumedSeconds / 60);
-					timeConsumedFormatted = `${timeConsumedMinutes} min`;
-				}
+			if (quiz.duration && submission.remainingSeconds != null) {
+				const totalSeconds = quiz.duration * 60;
+				const consumedSeconds = totalSeconds - submission.remainingSeconds;
 
-				return {
-					userId: submission.userId,
-					email: submission.email || "N/A",
-					participant1Name: submission.participant1Name,
-					participant1RollNo: submission.participant1RollNo,
-					participant2Name: submission.participant2Name || null,
-					participant2RollNo: submission.participant2RollNo || null,
-					score,
-					submittedAt: submittedAtRaw,
-					submittedAtFormatted,
-					timeConsumedMinutes,
-					timeConsumedFormatted,
-				};
-			})
-		);
+				timeConsumedMinutes = Math.floor(consumedSeconds / 60);
+				const consumedSecondsRemainder = consumedSeconds % 60;
+				timeConsumedFormatted = `${timeConsumedMinutes}m ${consumedSecondsRemainder}s`;
+			}
 
-		return new Response(JSON.stringify({ quizId, results }), {
+			return {
+				userId: submission.userId,
+				email: submission.email || "N/A",
+				participant1Name: submission.participant1Name,
+				participant1RollNo: submission.participant1RollNo,
+				participant2Name: submission.participant2Name || null,
+				participant2RollNo: submission.participant2RollNo || null,
+				score,
+				totalQuestions: submission.questions?.length || 0,
+				submittedAt: submittedAtRaw,
+				submittedAtFormatted,
+				timeConsumedMinutes,
+				timeConsumedFormatted,
+			};
+		});
+
+
+		return new Response(JSON.stringify({ 
+			quizId, 
+			results,
+			totalSubmissions: results.length 
+		}), {
 			status: 200,
 			headers: { "Content-Type": "application/json" },
 		});

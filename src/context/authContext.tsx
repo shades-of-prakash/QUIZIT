@@ -39,7 +39,6 @@ async function fetchUserApi(): Promise<User | null> {
 	}
 
 	const response = await res.json(); // ✅ await here
-	console.log(response);
 	return response;
 }
 
@@ -56,7 +55,6 @@ async function loginApi(credentials: LoginCredentials): Promise<User> {
 	});
 
 	const json = await res.json();
-	console.log(json);
 	if (!res.ok) {
 		throw new Error(json.message || "Login failed");
 	}

@@ -68,7 +68,7 @@ const Quiz: React.FC = () => {
 		}
 	};
 
-	const saveSessionState = async (updatedQuestions?: Question[]) => {
+	const saveSessionState = useCallback(async (updatedQuestions?: Question[]) => {
 		if (!user || !user.quizId || !sessionLoaded) return;
 
 		const questionsToSave = updatedQuestions || questions;
@@ -90,28 +90,14 @@ const Quiz: React.FC = () => {
 			console.error("Failed to save session state:", error);
 			toast.error("Failed to save progress");
 		}
-	};
+	}, [user, sessionLoaded, activeQuestion, skippedQuestions, questions]);
 
-	const handleTimeUp = () => {
-		toast.warning("⏰ Time is up! Auto-submitting your answers.");
-		handleSubmit();
-	};
-
-	const handleSubmit = async () => {
+	// ✅ Stable handleSubmit with useCallback
+	const handleSubmit = useCallback(async () => {
 		if (submitting || submitted) return;
 
 		if (!user || !user.quizId) {
 			toast.error("❌ User or quiz not found!");
-			return;
-		}
-
-		const unanswered = questions.filter(
-			(q) => !q.user_options || q.user_options.length === 0
-		);
-		if (unanswered.length > 0) {
-			toast.warning(
-				`You must answer all questions before submitting. ${unanswered.length} question(s) left unanswered.`
-			);
 			return;
 		}
 
@@ -145,7 +131,18 @@ const Quiz: React.FC = () => {
 			toast.error("Failed to submit quiz. Please try again.");
 			setSubmitting(false);
 		}
-	};
+	}, [submitting, submitted, user, questions, navigate]);
+
+	// ✅ Stable handleTimeUp with useCallback
+	const handleTimeUp = useCallback(() => {
+		toast.warning("⏰ Time is up! Auto-submitting your answers.");
+		handleSubmit();
+	}, [handleSubmit]);
+
+	// ✅ Stable handleTimerWarning with useCallback
+	const handleTimerWarning = useCallback(() => {
+		toast.warning("⚠️ Only 20 seconds left! Hurry up.");
+	}, []);
 
 	useEffect(() => {
 		if (user?._id && user.quizId) {
@@ -160,26 +157,34 @@ const Quiz: React.FC = () => {
 	}, [activeQuestion, questions]);
 
 	useEffect(() => {
-		const handleVisibilityChange = () => {
-			if (document.hidden && sessionLoaded && !submitted) {
-				setTabSwitchCount((prev) => {
-					const newCount = prev + 1;
-					if (newCount < 3) {
-						setWarningMessage(`${newCount}`);
-						setShowWarning(true);
-					} else {
-						toast.error("🚨 You switched tabs 3 times. Auto-submitting quiz.");
-						handleSubmit();
-					}
-					return newCount;
-				});
-			}
+		const handleFullscreenChange = () => {
+		  if (!document.fullscreenElement && sessionLoaded && !submitted) {
+			setTabSwitchCount((prev) => {
+			  const newCount = prev + 1;
+			  if (newCount < 3) {
+				setWarningMessage(`${newCount}`);
+				setShowWarning(true);
+			  } else {
+				toast.error("🚨 You exited fullscreen 3 times. Auto-submitting quiz.");
+				handleSubmit();
+			  }
+			  return newCount;
+			});
+		  }
 		};
-
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () =>
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-	}, [sessionLoaded, submitted]);
+	  
+		document.addEventListener("fullscreenchange", handleFullscreenChange);
+		document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+		document.addEventListener("mozfullscreenchange", handleFullscreenChange); 
+		document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+	  
+		return () => {
+		  document.removeEventListener("fullscreenchange", handleFullscreenChange);
+		  document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+		  document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+		  document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+		};
+	  }, [sessionLoaded, submitted, handleSubmit]);
 
 	const handleOptionChange = useCallback(
 		(optionIndex: number) => {
@@ -223,7 +228,7 @@ const Quiz: React.FC = () => {
 		[activeQuestion, saveSessionState]
 	);
 
-	const updateSkippedForCurrent = () => {
+	const updateSkippedForCurrent = useCallback(() => {
 		setSkippedQuestions((prev) => {
 			const updated = new Set(prev);
 			const current = questions[activeQuestion];
@@ -235,26 +240,26 @@ const Quiz: React.FC = () => {
 			return updated;
 		});
 		saveSessionState();
-	};
+	}, [questions, activeQuestion, saveSessionState]);
 
-	const handleNext = () => {
+	const handleNext = useCallback(() => {
 		updateSkippedForCurrent();
 		if (activeQuestion < questions.length - 1) {
 			setActiveQuestion(activeQuestion + 1);
 		}
-	};
+	}, [updateSkippedForCurrent, activeQuestion, questions.length]);
 
-	const handlePrevious = () => {
+	const handlePrevious = useCallback(() => {
 		updateSkippedForCurrent();
 		if (activeQuestion > 0) {
 			setActiveQuestion(activeQuestion - 1);
 		}
-	};
+	}, [updateSkippedForCurrent, activeQuestion]);
 
-	const handleSetActive = (i: number) => {
+	const handleSetActive = useCallback((i: number) => {
 		updateSkippedForCurrent();
 		setActiveQuestion(i);
-	};
+	}, [updateSkippedForCurrent]);
 
 	if (!sessionLoaded || questions.length === 0) {
 		return (
@@ -305,9 +310,7 @@ const Quiz: React.FC = () => {
 							userId={user?._id ?? ""}
 							quizId={user?.quizId ?? ""}
 							onTimeUp={handleTimeUp}
-							onWarn={() => {
-								toast.warning("⚠️ Only 20 seconds left! Hurry up.");
-							}}
+							onWarn={handleTimerWarning}
 						/>
 						<button
 							onClick={handleSubmit}

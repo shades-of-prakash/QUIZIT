@@ -7,7 +7,6 @@ export async function authMiddleware(
 	tokenName: string = "token"
 ) {
 	const cookieHeader = req.headers.get("Cookie");
-	console.log("Cookie header:", cookieHeader);
 
 	if (!cookieHeader) {
 		return {
@@ -15,7 +14,6 @@ export async function authMiddleware(
 		};
 	}
 
-	// Parse cookies into an object
 	const cookies = Object.fromEntries(
 		cookieHeader.split("; ").map((c) => {
 			const [key, v] = c.split("=");
@@ -23,9 +21,7 @@ export async function authMiddleware(
 		})
 	);
 
-	// Use the provided tokenName
 	const token = cookies[tokenName];
-	console.log(`Looking for token "${tokenName}" →`, token);
 
 	if (!token) {
 		return {
@@ -35,7 +31,6 @@ export async function authMiddleware(
 
 	try {
 		const decoded = jwt.verify(token, JWT_SECRET);
-		console.log("Decoded user:", decoded);
 		return { decodedUser: decoded };
 	} catch {
 		return {

@@ -167,6 +167,101 @@ const Step1 = ({
 	</>
 );
 
+const Step2 = ({
+	formData,
+	handleChange,
+	handlePreviousStep,
+	loginMutationIsLoading,
+	errors,
+}: {
+	formData: any;
+	handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+	handlePreviousStep: () => void;
+	loginMutationIsLoading: boolean;
+	errors: Record<string, string>;
+}) => {
+	const [showPassword, setShowPassword] = useState(false);
+
+	return (
+		<div className="flex flex-col items-center gap-5">
+			{/* Instruction text */}
+			<span className="text-base text-neutral-600 text-center">
+				Log in with the credentials provided by your coordinators.
+			</span>
+
+			<div className="flex flex-col w-full gap-3">
+				{/* Username */}
+				<div className="flex flex-col gap-2">
+					<label className="text-sm text-neutral-800">Username</label>
+					<input
+						type="text"
+						name="username"
+						value={formData.username}
+						onChange={handleChange}
+						className="placeholder:text-sm py-2 px-4 border border-neutral-300 rounded-md focus:outline-none focus:border-black"
+						placeholder="Enter your username"
+						required
+					/>
+					{errors.username && (
+						<p className="text-red-500 text-sm">{errors.username}</p>
+					)}
+				</div>
+
+				{/* Password */}
+				<div className="flex flex-col gap-2">
+					<label className="text-sm text-neutral-800">Password</label>
+					<div className="relative">
+						<input
+							type={showPassword ? "text" : "password"}
+							name="password"
+							value={formData.password}
+							onChange={handleChange}
+							className="w-full placeholder:text-sm py-2 px-4 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:border-black"
+							placeholder="Enter your password"
+							required
+						/>
+						<button
+							type="button"
+							onClick={() => setShowPassword(!showPassword)}
+							className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black"
+							tabIndex={-1}
+						>
+							{showPassword ? (
+								<EyeOff className="w-5 h-5" />
+							) : (
+								<Eye className="w-5 h-5" />
+							)}
+						</button>
+					</div>
+					{errors.password && (
+						<p className="text-red-500 text-sm">{errors.password}</p>
+					)}
+				</div>
+			</div>
+
+			{/* Navigation buttons */}
+			<div className="flex w-full gap-3 mt-4">
+				<button
+					type="button"
+					onClick={handlePreviousStep}
+					className="px-4 py-2 text-sm border border-neutral-800/40 text-neutral-800 rounded-md hover:bg-gray-100 transition-colors"
+				>
+					Previous
+				</button>
+
+				<button
+					type="submit"
+					disabled={loginMutationIsLoading}
+					className="px-4 py-2 text-sm bg-black text-white rounded-md disabled:opacity-50 hover:bg-gray-800 transition-colors"
+				>
+					{loginMutationIsLoading ? "Logging in..." : "Continue"}
+				</button>
+			</div>
+		</div>
+	);
+};
+
+// ------------------- MAIN LOGIN -------------------
 const Login: React.FC = () => {
 	const navigate = useNavigate();
 	const { login, loginMutationIsLoading } = useUserAuth();
@@ -209,7 +304,6 @@ const Login: React.FC = () => {
 		}
 	};
 
-	// rest of the component remains same, just pass quizSelectOptions to Step1
 	return (
 		<div className="w-screen h-dvh flex">
 			<div className="w-1/2 h-full bg-white flex items-center justify-center">
@@ -240,11 +334,13 @@ const Login: React.FC = () => {
 					<form
 						onSubmit={(e) => {
 							e.preventDefault();
-							currentStep === 1
-								? setCurrentStep(2)
-								: login(formData).catch((err: any) =>
-										setErrors({ global: err.message })
-								  );
+							if (currentStep === 1) {
+								setCurrentStep(2);
+							} else {
+								login(formData).catch((err: any) =>
+									setErrors({ global: err.message })
+								);
+							}
 						}}
 						className="w-full max-w-xl flex flex-col gap-3"
 					>
@@ -253,6 +349,7 @@ const Login: React.FC = () => {
 								{errors.global}
 							</p>
 						)}
+
 						{currentStep === 1 && (
 							<>
 								<Step1
@@ -273,7 +370,16 @@ const Login: React.FC = () => {
 								</div>
 							</>
 						)}
-						{/* Step2 remains unchanged */}
+
+						{currentStep === 2 && (
+							<Step2
+								formData={formData}
+								handleChange={handleChange}
+								handlePreviousStep={() => setCurrentStep(1)}
+								loginMutationIsLoading={loginMutationIsLoading}
+								errors={errors}
+							/>
+						)}
 					</form>
 				</div>
 			</div>
