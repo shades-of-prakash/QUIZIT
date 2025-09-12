@@ -1,10 +1,12 @@
-import { useState } from "react";
+import React, { useState, lazy, Suspense, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import CreateQuizModal from "./CreatequizModal";
 import { useNavigate } from "react-router";
-import Box from "../assets/box.png";
-import CreateUsers from "./CreateUsers";
-import { Divide } from "lucide-react";
+import Box from "../assets/box.webp";
+
+// Lazy load big components
+const CreateQuizModal = lazy(() => import("./CreatequizModal"));
+const CreateUsers = lazy(() => import("./CreateUsers"));
+
 interface Quiz {
 	id: string;
 	name: string;
@@ -46,6 +48,7 @@ export default function Createquiz() {
 		quizId: "",
 		quizName: "",
 	});
+	const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
 	const navigate = useNavigate();
 
 	const {
@@ -55,9 +58,15 @@ export default function Createquiz() {
 		error,
 		refetch,
 	} = useQuery<Quiz[], Error>({
-		queryKey: ["quizzes1"],
+		queryKey: ["quizzes"],
 		queryFn: fetchQuizzes,
+		enabled: false,
+		staleTime: 60 * 1000,
 	});
+
+	useEffect(() => {
+		refetch();
+	}, []);
 
 	const deleteMutation = useMutation<void, Error, string>({
 		mutationFn: deleteQuiz,
@@ -65,26 +74,7 @@ export default function Createquiz() {
 			refetch();
 			setDeletePopup({ show: false, quizId: "", quizName: "" });
 		},
-		onError: (error) => {
-			console.error("Error deleting quiz:", error);
-		},
 	});
-
-	const handleModalToggle = () => setShowModal((prev) => !prev);
-	const handleUsersPopUpToggle = () => setUsersPopUp((prev) => !prev);
-
-	const handleDelete = (e: React.MouseEvent, id: string, name: string) => {
-		e.stopPropagation();
-		setDeletePopup({ show: true, quizId: id, quizName: name });
-	};
-
-	const handleDeleteConfirm = (quizId: string) => {
-		deleteMutation.mutate(quizId);
-	};
-
-	const handleDeleteCancel = () => {
-		setDeletePopup({ show: false, quizId: "", quizName: "" });
-	};
 
 	return (
 		<div className="w-full h-full flex flex-col bg-green-950">
@@ -98,13 +88,13 @@ export default function Createquiz() {
 				</div>
 				<button
 					className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition"
-					onClick={handleModalToggle}
+					onClick={() => setShowModal(true)}
 				>
 					Create Quiz
 				</button>
 			</header>
 
-			{/* Table / Content */}
+			{/* Main content */}
 			<main className="flex-1 bg-white p-4 overflow-x-auto">
 				{isLoading ? (
 					<div className="w-full h-full flex flex-col items-center justify-center py-16">
@@ -119,22 +109,46 @@ export default function Createquiz() {
 					<QuizTable
 						quizzes={quizzes}
 						onNavigate={(id) => navigate(`${id}`)}
-						onUsersClick={handleUsersPopUpToggle}
-						onDelete={handleDelete}
+						onDelete={(e, id, name) =>
+							setDeletePopup({ show: true, quizId: id, quizName: name })
+						}
+						onUsers={(quiz) => setSelectedQuiz(quiz)}
 					/>
 				)}
 			</main>
 
-			{/* Delete Confirmation Popup */}
+			{/* Delete popup */}
 			{deletePopup.show && (
 				<DeleteConfirmationPopup
 					quizName={deletePopup.quizName}
 					quizId={deletePopup.quizId}
-					onConfirm={handleDeleteConfirm}
-					onCancel={handleDeleteCancel}
+					onConfirm={(quizId) => deleteMutation.mutate(quizId)}
+					onCancel={() =>
+						setDeletePopup({ show: false, quizId: "", quizName: "" })
+					}
 					isDeleting={deleteMutation.isPending}
 					error={deleteMutation.error}
 				/>
+			)}
+
+			{/* Lazy modals */}
+			{showModal && (
+				<Suspense fallback={<ModalFallback />}>
+					<CreateQuizModal
+						onClose={() => setShowModal(false)}
+						refreshQuizzes={refetch}
+					/>
+				</Suspense>
+			)}
+
+			{selectedQuiz && (
+				<Suspense fallback={<ModalFallback />}>
+					<CreateUsers
+						quizId={selectedQuiz.id}
+						quizName={selectedQuiz.name}
+						onClose={() => setSelectedQuiz(null)}
+					/>
+				</Suspense>
 			)}
 
 			{usersPopUp && (
@@ -142,45 +156,52 @@ export default function Createquiz() {
 					<div className="w-[800px] h-[400px] bg-white p-4 relative">
 						<button
 							className="absolute top-2 right-2 text-gray-600 hover:text-black"
-							onClick={handleUsersPopUpToggle}
+							onClick={() => setUsersPopUp(false)}
 						>
 							✕
 						</button>
-						{/* Users creation content goes here */}
+						{/* Users creation content */}
 					</div>
 				</div>
-			)}
-
-			{showModal && (
-				<CreateQuizModal onClose={handleModalToggle} refreshQuizzes={refetch} />
 			)}
 		</div>
 	);
 }
 
-const EmptyState = () => (
-	<div className="flex border border-neutral-400 rounded-md flex-col items-center justify-center py-16 text-gray-500">
-		<img src={Box} alt="No quizzes" className="w-16 h-16 mb-4" />
-		<p>No quizzes available</p>
+/* ---------------------- SMALL COMPONENTS ---------------------- */
+
+const ModalFallback = () => (
+	<div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+		<div className="bg-white p-6 rounded-lg shadow-md w-[480px] h-[300px]">
+			{" "}
+			{/* Fixed height */}
+			<p className="text-gray-700">Loading...</p>
+		</div>
 	</div>
 );
+const EmptyState = React.memo(() => (
+	<div className="flex border border-neutral-400 rounded-md flex-col items-center justify-center py-16 text-gray-500">
+		<img
+			src={Box}
+			alt="No quizzes"
+			width={64}
+			height={64}
+			className="w-16 h-16 mb-4 object-contain"
+			loading="lazy"
+		/>
+		<p>No quizzes available</p>
+	</div>
+));
 
 interface QuizTableProps {
 	quizzes: Quiz[];
 	onNavigate: (id: string) => void;
-	onUsersClick: () => void;
 	onDelete: (e: React.MouseEvent, id: string, name: string) => void;
+	onUsers: (quiz: Quiz) => void;
 }
 
-const QuizTable = ({
-	quizzes,
-	onNavigate,
-	onUsersClick,
-	onDelete,
-}: QuizTableProps) => {
-	const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-
-	return (
+const QuizTable = React.memo(
+	({ quizzes, onNavigate, onDelete, onUsers }: QuizTableProps) => (
 		<div className="overflow-hidden rounded-md border border-gray-300 shadow-sm">
 			<table className="w-full text-sm">
 				<thead className="bg-black/90 text-gray-300">
@@ -209,7 +230,7 @@ const QuizTable = ({
 								<button
 									onClick={(e) => {
 										e.stopPropagation();
-										setSelectedQuiz(quiz);
+										onUsers(quiz);
 									}}
 									className="border border-green-600 text-green-700 hover:bg-green-50 rounded-md px-3 py-1 transition"
 								>
@@ -226,16 +247,9 @@ const QuizTable = ({
 					))}
 				</tbody>
 			</table>
-			{selectedQuiz && (
-				<CreateUsers
-					quizId={selectedQuiz.id}
-					quizName={selectedQuiz.name}
-					onClose={() => setSelectedQuiz(null)}
-				/>
-			)}
 		</div>
-	);
-};
+	)
+);
 
 interface DeleteConfirmationPopupProps {
 	quizName: string;
@@ -246,62 +260,62 @@ interface DeleteConfirmationPopupProps {
 	error: Error | null;
 }
 
-const DeleteConfirmationPopup = ({
-	quizName,
-	quizId,
-	onConfirm,
-	onCancel,
-	isDeleting,
-	error,
-}: DeleteConfirmationPopupProps) => {
-	const [inputValue, setInputValue] = useState("");
-	const isDeleteEnabled = inputValue.toLowerCase() === "delete";
+const DeleteConfirmationPopup = React.memo(
+	({
+		quizName,
+		quizId,
+		onConfirm,
+		onCancel,
+		isDeleting,
+		error,
+	}: DeleteConfirmationPopupProps) => {
+		const [inputValue, setInputValue] = useState("");
+		const isDeleteEnabled = inputValue.toLowerCase() === "delete";
 
-	return (
-		<div className="fixed inset-0 z-20 bg-black bg-opacity-50 flex items-center justify-center">
-			<div className="bg-white rounded-lg p-6 w-[480px] max-w-full mx-4">
-				<h2 className="text-xl font-bold mb-4 text-red-600">Delete Quiz</h2>
-				<p className="text-gray-700 mb-4">
-					Are you sure you want to delete the quiz "{quizName}"? This action
-					cannot be undone.
-				</p>
-				<p className="text-sm text-gray-600 mb-4">
-					Type <strong>delete</strong> to confirm:
-				</p>
-				<input
-					type="text"
-					value={inputValue}
-					onChange={(e) => setInputValue(e.target.value)}
-					className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
-					placeholder="Type 'delete' to confirm"
-					disabled={isDeleting}
-				/>
-
-				{error && (
-					<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-						<p className="text-red-700 text-sm">
-							<strong>Error:</strong> {error.message}
-						</p>
-					</div>
-				)}
-
-				<div className="flex gap-3 justify-end">
-					<button
-						onClick={onCancel}
+		return (
+			<div className="fixed inset-0 z-20 bg-black bg-opacity-50 flex items-center justify-center">
+				<div className="bg-white rounded-lg p-6 w-[480px] max-w-full mx-4">
+					<h2 className="text-xl font-bold mb-4 text-red-600">Delete Quiz</h2>
+					<p className="text-gray-700 mb-4">
+						Are you sure you want to delete the quiz "{quizName}"? This action
+						cannot be undone.
+					</p>
+					<p className="text-sm text-gray-600 mb-4">
+						Type <strong>delete</strong> to confirm:
+					</p>
+					<input
+						type="text"
+						value={inputValue}
+						onChange={(e) => setInputValue(e.target.value)}
+						className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+						placeholder="Type 'delete' to confirm"
 						disabled={isDeleting}
-						className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition disabled:opacity-50"
-					>
-						Cancel
-					</button>
-					<button
-						onClick={() => onConfirm(quizId)}
-						disabled={!isDeleteEnabled || isDeleting}
-						className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{isDeleting ? "Deleting..." : "Delete"}
-					</button>
+					/>
+					{error && (
+						<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+							<p className="text-red-700 text-sm">
+								<strong>Error:</strong> {error.message}
+							</p>
+						</div>
+					)}
+					<div className="flex gap-3 justify-end">
+						<button
+							onClick={onCancel}
+							disabled={isDeleting}
+							className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition disabled:opacity-50"
+						>
+							Cancel
+						</button>
+						<button
+							onClick={() => onConfirm(quizId)}
+							disabled={!isDeleteEnabled || isDeleting}
+							className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
+						</button>
+					</div>
 				</div>
 			</div>
-		</div>
-	);
-};
+		);
+	}
+);

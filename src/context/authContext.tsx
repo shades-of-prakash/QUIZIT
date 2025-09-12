@@ -20,14 +20,12 @@ type AuthContextType = {
 	loginMutationError: Error | null;
 };
 
-// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// API call to fetch the current user (cookie-based)
 async function fetchUserApi(): Promise<User | null> {
 	const res = await fetch("/api/user", {
 		method: "GET",
-		credentials: "include", // needed if you're using cookies & cross-origin
+		credentials: "include",
 	});
 
 	if (res.status === 401) {
@@ -38,16 +36,14 @@ async function fetchUserApi(): Promise<User | null> {
 		throw new Error("Failed to fetch user");
 	}
 
-	const response = await res.json(); // ✅ await here
+	const response = await res.json();
 	return response;
 }
 
-// API call to log in
-// console.log(process.env.API_URL);
 async function loginApi(credentials: LoginCredentials): Promise<User> {
 	const res = await fetch(`/api/login`, {
 		method: "POST",
-		credentials: "include", // send & store cookies
+		credentials: "include",
 		headers: {
 			"Content-Type": "application/json",
 		},
@@ -64,7 +60,6 @@ async function loginApi(credentials: LoginCredentials): Promise<User> {
 
 // Provider
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	// Query to fetch the logged-in user
 	const {
 		data: userData,
 		isLoading,
@@ -75,7 +70,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		retry: false,
 	});
 
-	// Mutation to log in
 	const {
 		mutateAsync: loginMutation,
 		isPending: loginMutationIsLoading,
@@ -107,7 +101,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	);
 };
 
-// Hook
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (!context) {

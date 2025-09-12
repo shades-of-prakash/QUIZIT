@@ -1,30 +1,32 @@
-# Stage 1 — Build the React app
-FROM oven/bun:1.2 AS build
+# ---------- Build Stage ----------
+FROM oven/bun:1 AS build
 
-WORKDIR /app
+# Set working directory
+WORKDIR /usr/src/app
 
-# Copy dependency files first for better cache
-COPY package.json bun.lockb* ./
+# Copy dependency files
+COPY package.json bun.lock ./
 
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy the rest of the project
+# Copy the full project
 COPY . .
 
-# Build React app
+# Build the app (this runs your "build" script in package.json)
 RUN bun run build
 
-# Stage 2 — Serve with Nginx
-FROM nginx:1.27-alpine AS production
 
-# Copy build output from Bun stage
-COPY --from=build /app/dist /usr/share/nginx/html
+# ---------- Runtime Stage ----------
+FROM oven/bun:1 AS runtime
 
-# Copy custom Nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /usr/src/app
 
-# Expose port 8080
-EXPOSE 8080
+# Copy only what's needed from build stage
+COPY --from=build /usr/src/app ./
 
-CMD ["nginx", "-g", "daemon off;"]
+# Expose app port
+EXPOSE 4000
+
+# Start the app (uses "start" script from package.json)
+CMD ["bun", "start"]

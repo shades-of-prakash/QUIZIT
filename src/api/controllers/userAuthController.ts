@@ -190,8 +190,14 @@ export async function getCurrentUser(req: Request) {
 		req,
 		"user_token"
 	);
-	if (unauthorizedResponse) return unauthorizedResponse;
-	console.log("decoder user", decodedUser);
+
+	if (unauthorizedResponse) {
+		return new Response(JSON.stringify({ user: null }), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+
 	const decoded = decodedUser as {
 		username: string;
 		quizId: string;
@@ -199,25 +205,21 @@ export async function getCurrentUser(req: Request) {
 		participant1: string;
 		participant2: string;
 	};
-	console.log("decoded too", decoded);
 
 	const user = await usersCollection().findOne(
-		{
-			username: decoded.username,
-			quizId: decoded.quizId,
-		},
+		{ username: decoded.username, quizId: decoded.quizId },
 		{ projection: { password: 0 } }
 	);
-	console.log("Printing user in getCurrentUser controller in /api/me route");
-	console.log("user", user);
 
 	if (!user) {
-		return new Response(JSON.stringify({ message: "User not found" }), {
-			status: 404,
+		return new Response(JSON.stringify({ user: null }), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
 		});
 	}
 
-	return new Response(JSON.stringify(user), {
+	return new Response(JSON.stringify({ user }), {
+		status: 200,
 		headers: { "Content-Type": "application/json" },
 	});
 }

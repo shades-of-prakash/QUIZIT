@@ -54,16 +54,12 @@ async function fetchUserApi(): Promise<User | null> {
 		credentials: "include",
 	});
 
-	if (res.status === 401) {
-		return null;
-	}
-
 	if (!res.ok) {
 		throw new Error("Failed to fetch user");
 	}
-	const data = await res.json();
-	console.log("me", data);
-	return data;
+
+	const { user } = await res.json();
+	return user ?? null;
 }
 
 async function loginApi(credentials: LoginCredentials): Promise<User> {
@@ -81,7 +77,6 @@ async function loginApi(credentials: LoginCredentials): Promise<User> {
 		throw new Error(json.message || "Login failed");
 	}
 
-	// backend sends { message, data: user }
 	return json.data;
 }
 

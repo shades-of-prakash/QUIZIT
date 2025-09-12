@@ -2,9 +2,15 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
 import { useQuiz, type QuizSelectOption } from "../context/quizNamesContext";
-import loginImage from "../assets/login7.webp";
 import CustomSelect from "../components/CustomSelect";
 import { Eye, EyeOff } from "lucide-react";
+
+import loginImage200 from "../assets/login_q86a9p_c_scale,w_200.webp";
+import loginImage528 from "../assets/login_q86a9p_c_scale,w_528.webp";
+import loginImage830 from "../assets/login_q86a9p_c_scale,w_830.webp";
+import loginImage1106 from "../assets/login_q86a9p_c_scale,w_1106.webp";
+import loginImage1381 from "../assets/login_q86a9p_c_scale,w_1381.webp";
+import loginImage1400 from "../assets/login_q86a9p_c_scale,w_1400.webp";
 
 const Step1 = ({
 	formData,
@@ -306,13 +312,20 @@ const Login: React.FC = () => {
 
 	return (
 		<div className="w-screen h-dvh flex">
-			<div className="w-1/2 h-full bg-white flex items-center justify-center">
+			<div className="w-1/2 h-full bg-white overflow-hidden flex items-center justify-center">
 				<img
-					src={loginImage}
-					alt="login-image"
-					loading="eager"
+					sizes="(max-width: 1400px) 100vw, 1400px"
+					srcSet={`
+						${loginImage200} 200w,
+						${loginImage528} 528w,
+						${loginImage830} 830w,
+						${loginImage1106} 1106w,
+						${loginImage1381} 1381w,
+						${loginImage1400} 1400w`}
+					src={loginImage1400}
+					alt="user_login_page_image"
 					fetchPriority="high"
-					className="w-full h-full object-cover"
+					className="w-full h-full"
 				/>
 			</div>
 
