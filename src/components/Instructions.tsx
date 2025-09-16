@@ -28,6 +28,11 @@ const Instructions: React.FC = () => {
 		setIsStarting(true);
 
 		try {
+			// ✅ Request fullscreen before quiz starts
+			if (!document.fullscreenElement) {
+				await document.documentElement.requestFullscreen();
+			}
+
 			const { _id: userId, quizId } = user;
 			const selectedQuiz = quizOptions.find((q) => q.id === quizId);
 
@@ -144,7 +149,9 @@ const Instructions: React.FC = () => {
 									<CircleQuestionMark size={18} />
 									<span>Team size</span>
 								</div>
-								<span className="w-1/2">{TeamSize==1?"Individual":"Duo"}</span>
+								<span className="w-1/2">
+									{TeamSize == 1 ? "Individual" : "Duo"}
+								</span>
 							</div>
 						</div>
 					</div>
