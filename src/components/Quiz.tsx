@@ -36,7 +36,7 @@ const Quiz: React.FC = () => {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [skippedQuestions, setSkippedQuestions] = useState<Set<number>>(new Set());
 
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [tabSwitchCount, setTabSwitchCount] = useState(-1);
   const [showWarning, setShowWarning] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -176,7 +176,7 @@ const Quiz: React.FC = () => {
       if ((document.hidden || !document.fullscreenElement) && sessionLoaded && !submitted) {
         setTabSwitchCount(prev => {
           const newCount = prev + 1;
-          if (newCount < 3) {
+          if (newCount <= 3) {
             setWarningMessage(`Warning ${newCount}`);
             setShowWarning(true);
           } else {

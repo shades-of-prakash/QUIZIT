@@ -24,11 +24,21 @@ const quizSessionCollection = () => db!.collection("quiz-session");
 const quizSubmission = () => db!.collection("quiz-submission");
 const usersCollection = () => db!.collection<QuizUser>("quiz-users");
 
+
 function generateUserCredentials(quizName: string, index: number) {
-	const normalized = quizName.toLowerCase().replace(/\s+/g, "");
-	const username = `${normalized}_user_${index}`;
-	const password = `${quizName.replace(/\s+/g, "")}${100 + index}!`;
-	console.log("username", username, "password", password);
+	const initials = quizName
+		.split(/[\s\-_]+/)
+		.filter(Boolean) 
+		.map(word => word[0])
+		.join("")
+		.toLowerCase();
+
+	const username = `${initials}u${index}`;
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	let password = "";
+	for (let i = 0; i < 4; i++) {
+		password += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
 	return { username, password };
 }
 
