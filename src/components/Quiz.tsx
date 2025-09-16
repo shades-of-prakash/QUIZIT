@@ -12,6 +12,8 @@ import { useUserAuth } from "../context/userAuthContext";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import WarningModal from "./WarningModal";
+import SubmitConfirmModal from "./SubmitConfirmModal";
+
 
 type Question = {
   sno?: string;
@@ -37,6 +39,8 @@ const Quiz: React.FC = () => {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
 
   // 🔹 Load session
   const initializeSession = useCallback(async () => {
@@ -285,6 +289,14 @@ const Quiz: React.FC = () => {
         onClose={() => setShowWarning(false)}
       />
 
+      <SubmitConfirmModal
+        open={showSubmitConfirm}
+        onClose={() => setShowSubmitConfirm(false)}
+        onConfirm={() => {
+          setShowSubmitConfirm(false);
+          handleSubmit();
+        }}
+      />
       <div className="w-screen h-dvh flex flex-col gap-2 overflow-hidden">
         {/* HEADER */}
         <div className="w-full bg-white flex justify-between items-center px-4 py-3">
@@ -310,19 +322,19 @@ const Quiz: React.FC = () => {
               onTimeUp={handleTimeUp}
               onWarn={handleTimerWarning}
             />
-            <button
-              onClick={handleSubmit}
-              disabled={submitting || submitted}
-              className={`px-5 py-2 rounded-md text-white ${
-                submitted
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : submitting
-                  ? "bg-red-400 cursor-wait"
-                  : "bg-red-800 hover:bg-red-900"
-              }`}
-            >
-              {submitted ? "Submitted" : submitting ? "Submitting..." : "Submit"}
-            </button>
+        <button
+            onClick={() => setShowSubmitConfirm(true)}
+            disabled={submitting || submitted}
+            className={`px-5 py-2 rounded-md text-white ${
+              submitted
+                ? "bg-gray-500 cursor-not-allowed"
+                : submitting
+                ? "bg-red-400 cursor-wait"
+                : "bg-red-800 hover:bg-red-900"
+            }`}
+          >
+            {submitted ? "Submitted" : submitting ? "Submitting..." : "Submit"}
+          </button>
           </div>
         </div>
 
