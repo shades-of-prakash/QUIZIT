@@ -32,6 +32,6 @@
 		"noPropertyAccessFromIndexSignature": false
 	},
 
-	"include": ["src", "src/global.d.ts"],
+	"include": ["src", "src/global.d.ts", "second.tsx"],
 	"exclude": ["dist", "node_modules"]
 }

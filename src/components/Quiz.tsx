@@ -13,6 +13,7 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import WarningModal from "./WarningModal";
 import SubmitConfirmModal from "./SubmitConfirmModal";
+import CodeBlock from "./Test";
 
 type Question = {
 	sno?: string;
@@ -356,15 +357,15 @@ const Quiz: React.FC = () => {
 				</div>
 
 				{/* MAIN QUIZ */}
-				<div className="w-full flex flex-1 px-4">
-					<div className="flex w-full h-[600px] border border-neutral-800/20 rounded-md overflow-hidden">
+				<div className="w-full flex px-4">
+					<div className="flex w-full h-[560px] border border-neutral-800/20 rounded-md overflow-hidden">
 						{/* QUESTION */}
 						<div className="w-1/2 bg-neutral-50 p-10 flex flex-col gap-4">
 							<span className="font-semibold">
 								Question {activeQuestion + 1}
 							</span>
-							<div className="font-semibold overflow-auto">
-								{parse(questions[activeQuestion]?.question ?? "")}
+							<div className="font-semibold">
+								<CodeBlock raw={questions[activeQuestion]?.question ?? ""} />
 							</div>
 						</div>
 
@@ -412,7 +413,7 @@ const Quiz: React.FC = () => {
 				</div>
 
 				{/* FOOTER NAV */}
-				<div className="w-full flex justify-end mb-10 gap-3 px-4 py-2">
+				<div className="w-full flex justify-end gap-3 px-4 py-2">
 					<button
 						onClick={handlePrevious}
 						disabled={activeQuestion === 0}

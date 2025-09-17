@@ -28,6 +28,38 @@ const Page404 = lazy(() => import("./pages/Page404"));
 
 const queryClient = new QueryClient();
 
+import Test from "./components/Test";
+
+const block = `What is the purpose of the outer loop in the given C program?
+\`\`\`c
+// C program to demonstrate the
+// area and perimeter of rectangle
+// using function
+#include <stdio.h>
+
+int area(int a, int b)
+{
+    int A;
+    A = a * b;
+    return A;
+}
+int perimeter(int a, int b)
+{
+    int P;
+    P = 2 * (a + b);
+    return P;
+}
+
+int main()
+{
+
+    int l = 10, b = 10;
+    printf("Area of rectangle is : %d", area(l, b));
+    printf("\\nPerimeter of rectangle is : %d",perimeter(l, b));
+    return 0;
+}
+\`\`\`
+`;
 export function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
@@ -55,6 +87,7 @@ export function App() {
 
 									{/* Admin routes */}
 									<Route path="/admin-login" element={<AdminLogin />} />
+									<Route path="/test" element={<Test raw={block} />} />
 									<Route element={<ProtectedRoute />}>
 										<Route path="/admin" element={<DashboardLayout />}>
 											<Route
