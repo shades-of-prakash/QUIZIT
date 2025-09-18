@@ -28,7 +28,7 @@ const Page404 = lazy(() => import("./pages/Page404"));
 
 const queryClient = new QueryClient();
 
-import Test from "./components/Test";
+import Test from "./components/CodeBlock";
 
 const block = `What is the purpose of the outer loop in the given C program?
 \`\`\`c

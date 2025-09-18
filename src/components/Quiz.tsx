@@ -2,18 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import Slider from "./Slider";
 import Timer from "./Timer";
 import parse from "html-react-parser";
-import Prism from "prismjs";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-python";
-import "prismjs/components/prism-sql";
-import "prismjs/components/prism-java";
-import "prismjs/components/prism-c";
 import { useUserAuth } from "../context/userAuthContext";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import WarningModal from "./WarningModal";
 import SubmitConfirmModal from "./SubmitConfirmModal";
-import CodeBlock from "./Test";
+import CodeBlock from "./CodeBlock";
 
 type Question = {
 	sno?: string;
@@ -162,46 +156,38 @@ const Quiz: React.FC = () => {
 		initializeSession();
 	}, [initializeSession]);
 
-	// 🔹 Highlight code inside questions
-	useEffect(() => {
-		const codeBlocks = document.querySelectorAll("pre code");
-		codeBlocks.forEach((block) => {
-			Prism.highlightElement(block as HTMLElement);
-		});
-	}, [activeQuestion, questions]);
-
 	// 🔹 Fullscreen & tab switch detection
-	useEffect(() => {
-		const handleExit = () => {
-			if (
-				(document.hidden || !document.fullscreenElement) &&
-				sessionLoaded &&
-				!submitted
-			) {
-				setTabSwitchCount((prev) => {
-					const newCount = prev + 1;
-					if (newCount <= 3) {
-						setWarningMessage(`Warning ${newCount}`);
-						setShowWarning(true);
-					} else {
-						toast.error(
-							"🚨 You exited fullscreen or switched tabs 3 times. Auto-submitting quiz."
-						);
-						handleSubmit();
-					}
-					return newCount;
-				});
-			}
-		};
+	// useEffect(() => {
+	// 	const handleExit = () => {
+	// 		if (
+	// 			(document.hidden || !document.fullscreenElement) &&
+	// 			sessionLoaded &&
+	// 			!submitted
+	// 		) {
+	// 			setTabSwitchCount((prev) => {
+	// 				const newCount = prev + 1;
+	// 				if (newCount <= 3) {
+	// 					setWarningMessage(`Warning ${newCount}`);
+	// 					setShowWarning(true);
+	// 				} else {
+	// 					toast.error(
+	// 						"🚨 You exited fullscreen or switched tabs 3 times. Auto-submitting quiz."
+	// 					);
+	// 					handleSubmit();
+	// 				}
+	// 				return newCount;
+	// 			});
+	// 		}
+	// 	};
 
-		document.addEventListener("visibilitychange", handleExit);
-		document.addEventListener("fullscreenchange", handleExit);
+	// 	document.addEventListener("visibilitychange", handleExit);
+	// 	document.addEventListener("fullscreenchange", handleExit);
 
-		return () => {
-			document.removeEventListener("visibilitychange", handleExit);
-			document.removeEventListener("fullscreenchange", handleExit);
-		};
-	}, [sessionLoaded, submitted, handleSubmit]);
+	// 	return () => {
+	// 		document.removeEventListener("visibilitychange", handleExit);
+	// 		document.removeEventListener("fullscreenchange", handleExit);
+	// 	};
+	// }, [sessionLoaded, submitted, handleSubmit]);
 
 	// 🔹 Handle option change
 	const handleOptionChange = useCallback(
@@ -306,10 +292,10 @@ const Quiz: React.FC = () => {
 				onClose={() => setShowSubmitConfirm(false)}
 				onConfirm={() => {
 					setShowSubmitConfirm(false);
-					handleSubmit();
+					setTimeout(() => handleSubmit(), 0);
 				}}
 			/>
-			<div className="w-screen h-dvh flex flex-col gap-2 overflow-hidden">
+			<div className="w-screen min-h-screen flex flex-col gap-2">
 				{/* HEADER */}
 				<div className="w-full bg-white flex justify-between items-center px-4 py-3">
 					<div className="flex gap-2 items-center">
@@ -358,19 +344,20 @@ const Quiz: React.FC = () => {
 
 				{/* MAIN QUIZ */}
 				<div className="w-full flex px-4">
-					<div className="flex w-full h-[560px] border border-neutral-800/20 rounded-md overflow-hidden">
+					<div className="flex w-full h-[600px] border border-neutral-800/20 rounded-md overflow-hidden">
 						{/* QUESTION */}
-						<div className="w-1/2 bg-neutral-50 p-10 flex flex-col gap-4">
-							<span className="font-semibold">
+						<div className="w-1/2  px-5 py-4 flex flex-col gap-4 bg-green-800">
+							{/* bg-neutral-50 */}
+							<span className="font-semibold bg-blue-900">
 								Question {activeQuestion + 1}
 							</span>
-							<div className="font-semibold">
+							<div className="font-semibold flex-1 bg-yellow-800">
 								<CodeBlock raw={questions[activeQuestion]?.question ?? ""} />
 							</div>
 						</div>
 
 						{/* OPTIONS */}
-						<div className="w-1/2 flex flex-col p-10 gap-3">
+						<div className="w-1/2 flex flex-col px-5 py-4 gap-3">
 							<span className="font-semibold">Answer</span>
 							<div className="flex flex-col gap-6 overflow-auto">
 								{questions[activeQuestion]?.options?.map((opt, i) => {
@@ -413,7 +400,7 @@ const Quiz: React.FC = () => {
 				</div>
 
 				{/* FOOTER NAV */}
-				<div className="w-full flex justify-end gap-3 px-4 py-2">
+				<div className="w-full flex justify-end gap-3 px-4 py-2 sticky bottom-0 bg-white border-t">
 					<button
 						onClick={handlePrevious}
 						disabled={activeQuestion === 0}

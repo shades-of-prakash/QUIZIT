@@ -8,6 +8,9 @@ export default {
 				codebg: "var(--code-bg-color)",
 				accentLight: "var(--accent-light-color)",
 			},
+			fontFamily: {
+				geist: "var(--font-geist)",
+			},
 			screens: {
 				xs: "420px",
 				sm: "640px",

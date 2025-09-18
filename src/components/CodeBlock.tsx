@@ -31,15 +31,17 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw }) => {
 	}, [raw, code, lang, question]);
 
 	return (
-		<div className="w-full rounded-md overflow-hidden flex flex-col">
-			{question && <div className="w-full py-1 text-sm">{question}</div>}
+		<div className="w-full bg-red-900 rounded-md overflow-hidden flex flex-col gap-2">
+			{question && (
+				<div className="w-full py-1 text-base font-geist">{question}</div>
+			)}
 			{code && (
-				<div className="border">
-					<div className="w-full flex items-center h-8 bg-neutral-100 border-b border-neutral-800/20 px-2">
-						<span>{lang}</span>
+				<div className="border flex-1 border-neutral-800/20 overflow-hidden rounded-md">
+					<div className="w-full  flex items-center h-8 bg-neutral-100 border-b border-neutral-800/20 px-2">
+						<span className="text-base">{lang}</span>
 					</div>
 					<div
-						className="w-full h-[400px] overflow-hidden p-2 font-mono text-sm whitespace-pre-wrap break-words"
+						className="custom-scrollbar text-sm  w-full h-[450px] overflow-y-scroll p-2 font-mono whitespace-pre-wrap break-words"
 						dangerouslySetInnerHTML={{ __html: html }}
 					/>
 				</div>
