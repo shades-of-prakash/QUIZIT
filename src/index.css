@@ -1,0 +1,61 @@
+@import "prismjs/themes/prism.css";
+
+@tailwind utilities;
+@tailwind base;
+@tailwind components;
+
+* {
+	font-family: "Geist", sans-serif;
+	user-select: none;
+}
+#root {
+	height: 100dvh;
+	overflow: hidden;
+}
+
+:root {
+	--accent-color: rgb(142, 212, 89);
+	--accent-light-color: rgb(96, 199, 16);
+	--coor: #8fd45a6c;
+	--code-bg-color: #27282c;
+	--font-geist: "Geist", sans-serif;
+}
+
+@layer base {
+	.box {
+		box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
+			rgba(60, 64, 67, 0.15) 0px 2px 6px 2px;
+	}
+	.gradient {
+		background: linear-gradient(220.55deg, #b9a14c 0%, #000000 100%);
+	}
+	/* Shiki container always gets this class */
+	.shiki .line span {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+			"Liberation Mono", "Courier New", monospace !important;
+		font-size: 14px;
+		line-height: 1.6;
+	}
+}
+
+@layer utilities {
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: #e5e7eb;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background-color: #6b7280;
+		border-radius: 8px;
+	}
+	.custom-scrollbar pre {
+		margin: 0;
+		padding: 0.5rem;
+		white-space: pre-wrap; /* wraps long lines */
+		word-break: break-word;
+	}
+}
