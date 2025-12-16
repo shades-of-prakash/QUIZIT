@@ -21,7 +21,7 @@ const SingleQuizHandler = lazy(() => import("./components/SingleQuizHandler"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const UserProtectedRoute = lazy(
-	() => import("./components/UserProtectedRoute")
+  () => import("./components/UserProtectedRoute"),
 );
 const Redirect = lazy(() => import("./components/Redirect"));
 const Page404 = lazy(() => import("./pages/Page404"));
@@ -61,57 +61,57 @@ int main()
 \`\`\`
 `;
 export function App() {
-	return (
-		<QueryClientProvider client={queryClient}>
-			<AuthProvider>
-				<UserAuthProvider>
-					<QuizProvider>
-						<BrowserRouter>
-							<Toaster position="top-center" richColors />
-							<Suspense fallback={<Loader />}>
-								<Routes>
-									<Route element={<UserProtectedRoute />}>
-										<Route path="/instructions" element={<Instructions />} />
-										<Route path="/quiz" element={<Quiz />} />
-										<Route path="/submission" element={<Submission />} />
-									</Route>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <UserAuthProvider>
+          <QuizProvider>
+            <BrowserRouter>
+              <Toaster position="top-center" richColors />
+              <Suspense fallback={<Loader />}>
+                <Routes>
+                  <Route element={<UserProtectedRoute />}>
+                    <Route path="/instructions" element={<Instructions />} />
+                    <Route path="/quiz" element={<Quiz />} />
+                    <Route path="/submission" element={<Submission />} />
+                  </Route>
 
-									<Route
-										path="/"
-										element={
-											<Redirect>
-												<Login />
-											</Redirect>
-										}
-									/>
+                  <Route
+                    path="/"
+                    element={
+                      <Redirect>
+                        <Login />
+                      </Redirect>
+                    }
+                  />
 
-									{/* Admin routes */}
-									<Route path="/admin-login" element={<AdminLogin />} />
-									<Route path="/test" element={<Test raw={block} />} />
-									<Route element={<ProtectedRoute />}>
-										<Route path="/admin" element={<DashboardLayout />}>
-											<Route
-												index
-												element={<Navigate to="Createquiz" replace />}
-											/>
-											<Route path="results" element={<Results />} />
-											<Route path="Createquiz" element={<Createquiz />} />
-											<Route
-												path="Createquiz/:id"
-												element={<SingleQuizHandler />}
-											/>
-										</Route>
-									</Route>
+                  {/* Admin routes */}
+                  <Route path="/admin-login" element={<AdminLogin />} />
+                  <Route path="/test" element={<Test raw={block} />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/admin" element={<DashboardLayout />}>
+                      <Route
+                        index
+                        element={<Navigate to="Createquiz" replace />}
+                      />
+                      <Route path="results" element={<Results />} />
+                      <Route path="Createquiz" element={<Createquiz />} />
+                      <Route
+                        path="Createquiz/:id"
+                        element={<SingleQuizHandler />}
+                      />
+                    </Route>
+                  </Route>
 
-									<Route path="*" element={<Page404 />} />
-								</Routes>
-							</Suspense>
-						</BrowserRouter>
-					</QuizProvider>
-				</UserAuthProvider>
-			</AuthProvider>
-		</QueryClientProvider>
-	);
+                  <Route path="*" element={<Page404 />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </QuizProvider>
+        </UserAuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
 }
 
 export default App;

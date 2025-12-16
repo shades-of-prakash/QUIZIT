@@ -1,0 +1,283 @@
+sno,question,question-image,option1,option1-image,option2,option2-image,option3,option3-image,option4,option4-image,multiple,correct-options
+1,How do you reverse a string in Python?,nothing.png,,something.png,,something.png,,something.png,,something.png,FALSE,1
+2,What checks if a string is a palindrome?,,Compare string with its reverse,,Check if string equals itself,,Count characters,,Convert to uppercase and compare,,FALSE,1
+3,How do you count numerical digits in a string?,,Use isdigit() method,,Use len() function,,Check ASCII values,,Convert to integer,,FALSE,1
+4,How do you find the occurrence of a character in a string?,,Use count() method,,Loop through string,,Use find() method,,Use index() method,,FALSE,1
+5,How to find non-matching characters between two strings?,,Compare characters by index,,Sort both strings,,Check length difference,,Use set operations,,FALSE,1
+6,How to check if two strings are anagrams?,,Sort both strings and compare,,Check if lengths are equal,,Compare characters directly,,Use dictionary for counts,,TRUE,1|4
+7,How to count vowels and consonants in a string?,,Iterate and check each character,,Use regex for vowels,,Count spaces,,Convert to set,,FALSE,1
+8,How to sum matching integers in an array?,,Loop through array,,Use sum() function,,Sort array first,,Check for duplicates,,FALSE,1
+9,How do you reverse an array in-place?,,Swap elements from ends,,Use reverse() method,,Create new array,,Sort in descending order,,FALSE,1
+10,How to find the maximum element in an array?                    ,,Track max while iterating,,Use max() function,,Sort array,,Check first element,,FALSE,2
+11,How to sort an array in ascending order?,,Use sort() method,,Implement bubble sort,,Use quicksort,,Use mergesort,,TRUE,1|2|3|4
+12,How to print Fibonacci sequence using recursion?,,Call function with n-1 and n-2,,Use loop instead,,Store in array,,Use dynamic programming,,FALSE,1
+13,How to calculate the sum of two integers?,,Use + operator,,Convert to string and parse,,Use bitwise operations,,Use recursion,,FALSE,1
+14,How to find the average of numbers in a list?,,Sum and divide by length,,Use mean() function,,Sort and pick middle,,Count elements,,TRUE,1|2
+15,How to check if a number is even or odd?,,Use modulo operator,,Divide by 2,,Check last digit,,Use bitwise AND,,TRUE,1|4
+16,How to find the middle element of a linked list?,,Use two pointers (slow and fast),,Count all nodes,,Traverse half length,,Reverse list,,FALSE,1
+17,How to remove a loop in a linked list?,,Use Floyd’s cycle detection,,Mark visited nodes,,Use hash table,,Reverse list,,FALSE,1
+18,How to merge two sorted linked lists?,,Compare and merge nodes,,Concatenate lists,,Sort after merging,,Use recursion,,TRUE,1|4
+19,How to implement binary search?,,Divide array and compare middle,,Linear search,,Check each element,,Sort first,,FALSE,1
+20,How to print a binary tree in vertical order?,,Use level order traversal,,Use DFS,,Use hash map with horizontal distance,,Preorder traversal,,FALSE,3
+21,What is a data structure?,,Organizes data for efficient use,,Collection of variables,,Program logic,,Memory allocation,,FALSE,1
+22,What is an array?,,Contiguous memory storage,,Linked nodes,,Dynamic size structure,,Key-value pairs,,FALSE,1
+23,What is a linked list?,,Nodes with pointers,,Fixed-size array,,Tree structure,,Hash table,,FALSE,1
+24,What is the difference between array and linked list?,,Array is fixed size; linked list is dynamic,,Array uses pointers,,Linked list is contiguous,,Array is slower,,FALSE,1
+25,What is LIFO?,,Last In First Out,,First In First Out,,Last In Last Out,,First In Last Out,,FALSE,1
+26,What is FIFO?,,First In First Out,,Last In First Out,,First In Last Out,,Last In Last Out,,FALSE,1
+27,What is a stack?,,LIFO data structure,,FIFO data structure,,Tree structure,,Graph structure,,FALSE,1
+28,What are binary trees?,,Nodes with up to two children,,Nodes with one child,,Nodes with multiple children,,Linear structure,,FALSE,1
+29,What is object-oriented programming?,,Uses classes and objects,,Procedural programming,,Functional programming,,Script-based programming,,FALSE,1
+30,What is the purpose of a loop in programming?,,Repeat code execution,,Conditional execution,,Function definition,,Variable declaration,,FALSE,1
+31,What is a conditional statement?,,Controls program flow,,Loops through data,,Declares variables,,Handles errors,,FALSE,1
+32,What is debugging?,,Finding and fixing errors,,Writing code,,Testing code,,Deploying code,,FALSE,1
+33,What is recursion?,,Function calling itself,,Iterative loop,,Conditional statement,,Error handling,,FALSE,1
+34,What is the difference between linear and non-linear data structures?,,Linear has sequential access,,Non-linear has random access,,Linear is faster,,Non-linear is fixed size,,FALSE,1
+35,What is time complexity?,,Measure of algorithm efficiency,,Memory usage,,Code length,,Error rate,,FALSE,1
+36,What is version control used for?,,Track code changes,,Debug code,,Optimize code,,Run code,,FALSE,1
+37,What is the difference between SQL and NoSQL databases?,,SQL is relational; NoSQL is non-relational,,SQL is faster,,NoSQL is structured,,SQL is non-relational,,FALSE,1
+38,What is a design pattern?,,Reusable solution template,,Code syntax,,Database schema,,Hardware configuration,,FALSE,1
+39,How to handle exceptions in code?,,Use try-catch blocks,,Ignore errors,,Print error messages,,Exit program,,FALSE,1
+40,How to find the GCD of two numbers?,,Use Euclidean algorithm,,Divide and check,,Multiply numbers,,Use loops,,FALSE,1
+41,How to check if a number is a perfect number?,,Sum proper divisors,,Check if prime,,Divide by 2,,Count digits,,FALSE,1
+42,How to implement bubble sort?,,Swap adjacent elements,,Divide and conquer,,Use pointers,,Randomize array,,FALSE,1
+43,How to implement merge sort?,,Divide and merge subarrays,,Swap elements,,Use recursion,,Sort in-place,,TRUE,1|3
+44,How to find the factorial of a number?,,Use recursion or loop,,Divide number,,Check if even,,Use bitwise operations,,TRUE,1|2
+45,How to check if a binary tree is balanced?,,Compare heights of subtrees,,Count nodes,,Check leaf nodes,,Use level order traversal,,FALSE,1
+46,How to implement a queue using stacks?,,Use two stacks,,Use one stack,,Use array,,Use linked list,,FALSE,1
+47,How to find the longest common subsequence?,,Use dynamic programming,,Compare characters,,Sort strings,,Use recursion,,FALSE,1
+48,How to detect a cycle in a graph?,,Use DFS or BFS,,Count nodes,,Sort edges,,Use hash table,,TRUE,1|2
+49,How to implement a binary tree traversal?,,Use inorder,, preorder,, or postorder,,Sort nodes,,TRUE,1|2
+50,How to solve the knapsack problem?,,Use dynamic programming,,Greedy approach,,Brute force,,Random selection,,FALSE,2
+51,"How to remove duplicates from a sorted array in-place?```python
+def remove_duplicates(arr):
+    if not arr:
+        return 0
+    write_index = 1
+    for i in range(1, len(arr)):
+        if arr[i] != arr[i-1]:
+            arr[write_index] = arr[i]
+            write_index += 1
+    return write_index
+```",,Use two-pointer technique,,Create a new array,,Sort array first,,Use hash set,,FALSE,1
+52,"How to implement a stack using two queues?```python
+from collections import deque
+class Stack:
+    def __init__(self):
+        self.q1 = deque()
+        self.q2 = deque()
+    def push(self, x):
+        self.q2.append(x)
+        while self.q1:
+            self.q2.append(self.q1.popleft())
+        self.q1, self.q2 = self.q2, self.q1
+```",,Use two queues with swap,,Use one queue,,Use array,,Use linked list,,FALSE,1
+53,"How to find the intersection of two arrays?```python
+def intersection(nums1, nums2):
+    set1 = set(nums1)
+    result = set()
+    for num in nums2:
+        if num in set1:
+            result.add(num)
+    return list(result)
+```",,Use hash set,,Sort and merge,,Use nested loops,,Count frequencies,,FALSE,1
+54,"How to rotate an array by k positions?```python
+def rotate_array(arr, k):
+    k = k % len(arr)
+    arr[:] = arr[-k:] + arr[:-k]
+```",,Use array slicing,,Create new array,,Swap elements k times,,Use recursion,,FALSE,1
+55,"How to implement a binary search tree insertion?```python
+class Node:
+    def __init__(self, val):
+        self.val = val
+        self.left = None
+        self.right = None
+def insert(root, val):
+    if not root:
+        return Node(val)
+    if val < root.val:
+        root.left = insert(root.left, val)
+    else:
+        root.right = insert(root.right, val)
+    return root
+```",,Use recursion,,Use iteration,,Sort array first,,Use hash table,,FALSE,1
+56,"How to check if a string is a valid parenthesis sequence?```python
+def is_valid(s):
+    stack = []
+    for char in s:
+        if char in '([{':
+            stack.append(char)
+        elif char in ')]}':
+            if not stack or stack.pop() != '([{'[char.index(')]}')]:
+                return False
+    return not stack
+```",,Use stack,,Count brackets,,Use recursion,,Convert to list,,FALSE,1
+57,"How to find the first non-repeating character in a string?```python
+def first_non_repeating(s):
+    count = {}
+    for char in s:
+        count[char] = count.get(char, 0) + 1
+    for char in s:
+        if count[char] == 1:
+            return char
+    return None
+```",,Use hash map,,Sort string,,Use array,,Count characters,,FALSE,1
+58,"How to implement quicksort?```python
+def quicksort(arr, low, high):
+    if low < high:
+        pi = partition(arr, low, high)
+        quicksort(arr, low, pi - 1)
+        quicksort(arr, pi + 1, high)
+def partition(arr, low, high):
+    pivot = arr[high]
+    i = low - 1
+    for j in range(low, high):
+        if arr[j] <= pivot:
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i + 1], arr[high] = arr[high], arr[i + 1]
+    return i + 1
+```",,Use pivot and partition,,Swap adjacent elements,,Divide and merge,,Use heap,,FALSE,1
+59,"How to find the longest palindromic substring?```python
+def longest_palindrome(s):
+    n = len(s)
+    start = 0
+    max_len = 1
+    for i in range(n):
+        for j in range(i, n):
+            if s[i:j+1] == s[i:j+1][::-1] and j - i + 1 > max_len:
+                start = i
+                max_len = j - i + 1
+    return s[start:start + max_len]
+```",,Use dynamic programming,,Use two pointers,,Sort string,,Use stack,,FALSE,1
+60,"How to implement a trie for prefix search?```python
+class TrieNode:
+    def __init__(self):
+        self.children = {}
+        self.is_end = False
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+    def insert(self, word):
+        node = self.root
+        for char in word:
+            if char not in node.children:
+                node.children[char] = TrieNode()
+            node = node.children[char]
+        node.is_end = True
+```",,Use trie data structure,,Use array,,Use hash map,,Use linked list,,FALSE,1
+61,"How to find the kth smallest element in an array?```python
+def kth_smallest(arr, k):
+    arr.sort()
+    return arr[k-1]
+```",,Sort array,,Use quickselect,,Use heap,,Use binary search,,TRUE,1|2|3
+62,"How to reverse a linked list?```python
+class ListNode:
+    def __init__(self, val=0):
+        self.val = val
+        self.next = None
+def reverse_list(head):
+    prev = None
+    current = head
+    while current:
+        next_node = current.next
+        current.next = prev
+        prev = current
+        current = next_node
+    return prev
+```",,Iterate and swap pointers,,Use recursion,,Create new list,,Use stack,,TRUE,1|2
+63,"How to implement a depth-first search on a graph?```python
+def dfs(graph, node, visited):
+    visited.add(node)
+    for neighbor in graph[node]:
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited)
+```",,Use recursion,,Use iteration,,Use queue,,Use stack,,TRUE,1|4
+64,"How to check if a number is prime?```python
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n ** 0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+```",,Check divisibility up to square root,,Check all numbers,,Use recursion,,Use hash table,,FALSE,1
+65,"How to find the shortest path in an unweighted graph?```python
+from collections import deque
+def bfs_shortest_path(graph, start, end):
+    queue = deque([(start, [start])])
+    visited = {start}
+    while queue:
+        node, path = queue.popleft()
+        if node == end:
+            return path
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, path + [neighbor]))
+    return []
+```",,Use BFS,,Use DFS,,Use Dijkstra’s algorithm,,Use A* algorithm,,FALSE,1
+66,"How to implement a min heap?```python
+class MinHeap:
+    def __init__(self):
+        self.heap = []
+    def push(self, val):
+        self.heap.append(val)
+        self._sift_up(len(self.heap) - 1)
+    def _sift_up(self, index):
+        parent = (index - 1) // 2
+        if index > 0 and self.heap[parent] > self.heap[index]:
+            self.heap[parent], self.heap[index] = self.heap[index], self.heap[parent]
+            self._sift_up(parent)
+```",,Use array-based heap,,Use linked list,,Use stack,,Use queue,,FALSE,1
+67,"How to find the length of a linked list?```python
+class ListNode:
+    def __init__(self, val=0):
+        self.val = val
+        self.next = None
+def get_length(head):
+    count = 0
+    current = head
+    while current:
+        count += 1
+        current = current.next
+    return count
+```",,Traverse and count nodes,,Use recursion,,Use hash table,,Use array,,TRUE,1|2
+68,"How to implement a sliding window maximum?```python
+from collections import deque
+def max_sliding_window(nums, k):
+    result = []
+    window = deque()
+    for i in range(len(nums)):
+        while window and window[0] <= i - k:
+            window.popleft()
+        while window and nums[window[-1]] <= nums[i]:
+            window.pop()
+        window.append(i)
+        if i >= k - 1:
+            result.append(nums[window[0]])
+    return result
+```",,Use deque,,Use heap,,Use array,,Sort window,,FALSE,1
+69,"How to check if two binary trees are identical?```python
+class TreeNode:
+    def __init__(self, val=0):
+        self.val = val
+        self.left = None
+        self.right = None
+def is_same_tree(p, q):
+    if not p and not q:
+        return True
+    if not p or not q or p.val != q.val:
+        return False
+    return is_same_tree(p.left, q.left) and is_same_tree(p.right, q.right)
+```",,Use recursion,,Use iteration,,Compare level order,,Use hash table,,FALSE,1
+70,"How to implement a function to flatten a nested list?```python
+def flatten(nested_list):
+    result = []
+    for item in nested_list:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+```",,Use recursion,,Use iteration,,Use stack,,Use queue,,TRUE,1|3

@@ -13,7 +13,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
   const timeLeftRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Use refs to store callback functions to avoid dependency issues
   const onTimeUpRef = useRef(onTimeUp);
   const onWarnRef = useRef(onWarn);
@@ -32,7 +32,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
     const initTimer = async () => {
       try {
         const res = await fetch(
-          `/api/quiz-remaining-time?userId=${userId}&quizId=${quizId}`
+          `/api/quiz-remaining-time?userId=${userId}&quizId=${quizId}`,
         );
         const data = await res.json();
 
@@ -135,7 +135,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
   const mins = Math.floor((timeLeft % 3600) / 60);
   const secs = timeLeft % 60;
 
-  const timeTextClass = `text-xl transition-colors duration-500 ${
+  const timeTextClass = `text-sm transition-colors duration-500 ${
     timeLeft <= 300 ? "text-red-600" : ""
   }`;
 
@@ -146,7 +146,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
         <span>Time</span>
         <span>Left:</span>
       </div>
-      <div className="w-[150px] flex items-center justify-center p-2 text-sm gap-2 bg-neutral-100 border border-neutral-300 rounded-md">
+      <div className="w-[120px] flex items-center justify-center py-1 px-2 text-sm gap-2 bg-neutral-100 border border-neutral-300 rounded-md">
         <div className="flex flex-col items-center">
           <span className={timeTextClass}>
             {hrs.toString().padStart(2, "0")}
