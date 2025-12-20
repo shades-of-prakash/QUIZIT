@@ -3,13 +3,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: backend   
+      target: backend
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://host.docker.internal:27017/QUIZIT
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret}
     expose:
       - "4000"
+    volumes:
+      - ./public/uploads:/usr/src/app/public/uploads
     networks:
       - app-network
 
@@ -17,12 +19,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: frontend  
+      target: frontend
     container_name: nginx-proxy
     ports:
       - "8080:8080"
     depends_on:
       - app
+    volumes:
+      - ./public/uploads:/usr/share/nginx/html/uploads
     networks:
       - app-network
 

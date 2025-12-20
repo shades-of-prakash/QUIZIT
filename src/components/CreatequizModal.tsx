@@ -30,16 +30,30 @@ export default function CreateQuizModal({
 
   /* ---------- FILE HANDLERS ---------- */
 
-  const handleCsvChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleCsvChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.name.endsWith(".csv")) {
       toast.error("Only .csv files are allowed");
+      e.target.value = "";
       return;
     }
 
-    setCsvFile(file);
+    try {
+      // Strict UTF-8 validation
+      const buffer = await file.arrayBuffer();
+      const decoder = new TextDecoder("utf-8", { fatal: true });
+      decoder.decode(buffer);
+
+      setCsvFile(file);
+    } catch {
+      toast.error(
+        "Invalid file encoding. Please upload a UTF-8 encoded CSV file.",
+      );
+      e.target.value = "";
+      setCsvFile(null);
+    }
   };
 
   const handleZipChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +62,7 @@ export default function CreateQuizModal({
 
     if (!file.name.endsWith(".zip")) {
       toast.error("Only .zip files are allowed");
+      e.target.value = "";
       return;
     }
 
@@ -150,7 +165,7 @@ export default function CreateQuizModal({
           <FileBox
             icon={<Upload />}
             title="Upload quiz.csv"
-            subtitle="Required"
+            subtitle="UTF-8 required"
             file={csvFile}
             accept=".csv"
             onChange={handleCsvChange}
