@@ -207,25 +207,25 @@ const Quiz: React.FC = () => {
     }, 1000);
   }, [user, handleSubmit]);
 
-  // useEffect(() => {
-  //   const handleExit = () => {
-  //     if (
-  //       (document.hidden || !document.fullscreenElement) &&
-  //       sessionLoaded &&
-  //       !submitted
-  //     ) {
-  //       incrementTabSwitchCount();
-  //     }
-  //   };
+  useEffect(() => {
+    const handleExit = () => {
+      if (
+        (document.hidden || !document.fullscreenElement) &&
+        sessionLoaded &&
+        !submitted
+      ) {
+        incrementTabSwitchCount();
+      }
+    };
 
-  //   document.addEventListener("visibilitychange", handleExit);
-  //   document.addEventListener("fullscreenchange", handleExit);
+    document.addEventListener("visibilitychange", handleExit);
+    document.addEventListener("fullscreenchange", handleExit);
 
-  //   return () => {
-  //     document.removeEventListener("visibilitychange", handleExit);
-  //     document.removeEventListener("fullscreenchange", handleExit);
-  //   };
-  // }, [sessionLoaded, submitted, incrementTabSwitchCount]);
+    return () => {
+      document.removeEventListener("visibilitychange", handleExit);
+      document.removeEventListener("fullscreenchange", handleExit);
+    };
+  }, [sessionLoaded, submitted, incrementTabSwitchCount]);
 
   const handleOptionChange = useCallback(
     (optionIndex: number) => {
@@ -311,11 +311,11 @@ const Quiz: React.FC = () => {
 
   return (
     <>
-      {/*<WarningModal
+      <WarningModal
         open={showWarning}
         message={warningMessage}
         onClose={() => setShowWarning(false)}
-      />*/}
+      />
 
       <SubmitConfirmModal
         open={showSubmitConfirm}
