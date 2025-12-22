@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import { MoveLeft, Clock, ListChecks, Pencil } from "lucide-react";
+import CodeBlock, { parseCodeBlock } from "./CodeBlock";
+
+/* ===================== Types ===================== */
 
 interface Option {
   text?: string | null;
@@ -12,8 +15,14 @@ interface Question {
   question: string;
   questionImage?: string;
   options: Option[];
-  correct_options: number[];
   multiple: boolean;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  totalQuestions: number;
+  totalPages: number;
 }
 
 interface QuizDetails {
@@ -23,187 +32,322 @@ interface QuizDetails {
   totalQuestions: number;
   quizQuestions: number;
   questions: Question[];
+  pagination: Pagination;
   createdAt: string;
 }
+
+const LIMIT = 5;
+
+/* ===================== Main Component ===================== */
 
 const SingleQuizHandler: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [quiz, setQuiz] = useState<QuizDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [quizMeta, setQuizMeta] = useState<Omit<
+    QuizDetails,
+    "questions" | "pagination"
+  > | null>(null);
+
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [page, setPage] = useState(1);
-  const questionsPerPage = 5;
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  /* ---- Edit Popup State ---- */
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+
+  /* ===================== Fetch Questions ===================== */
+
+  const fetchQuestions = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/quizdetails", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quizId: id, page, limit: LIMIT }),
+      });
+
+      if (!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+
+      if (!quizMeta) {
+        const { questions, pagination, ...meta } = data;
+        setQuizMeta(meta);
+      }
+
+      setQuestions((prev) => [...prev, ...data.questions]);
+      setHasMore(data.pagination.page < data.pagination.totalPages);
+      setPage((p) => p + 1);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchQuiz = async () => {
-      try {
-        const res = await fetch("/api/quizdetails", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quizId: id }),
-        });
+    fetchQuestions();
+  }, []);
 
-        if (!res.ok) throw new Error("Failed to fetch quiz");
-        const data = await res.json();
-        setQuiz(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchQuestions();
+        }
+      },
+      { threshold: 0.1 },
+    );
 
-    fetchQuiz();
-  }, [id]);
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
 
-  if (loading) return <p>Loading...</p>;
-  if (!quiz) return <p>No quiz found</p>;
+  /* ===================== Update Question ===================== */
 
-  const startIndex = (page - 1) * questionsPerPage;
-  const currentQuestions = quiz.questions.slice(
-    startIndex,
-    startIndex + questionsPerPage,
-  );
-  const totalPages = Math.ceil(quiz.questions.length / questionsPerPage);
+  const handleUpdateQuestion = async (updated: Question) => {
+    if (!id) return;
 
-  const maxOptions = Math.max(...quiz.questions.map((q) => q.options.length));
+    try {
+      setSaving(true);
+
+      const res = await fetch("/api/update-question", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          quizId: id,
+          ...updated,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Update failed");
+
+      const data = await res.json();
+
+      setQuestions((prev) =>
+        prev.map((q) => (q.sno === data.question.sno ? data.question : q)),
+      );
+
+      setEditOpen(false);
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update question");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* ===================== Guards ===================== */
+
+  if (!quizMeta && loading)
+    return <div className="p-6 text-center text-sm">Loading quiz…</div>;
+
+  if (!quizMeta)
+    return <div className="p-6 text-center text-sm">No quiz found</div>;
+
+  /* ===================== JSX ===================== */
 
   return (
-    <div className="w-full flex flex-col h-full p-3 gap-4 bg-white">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center p-2 gap-2">
+    <div className="flex flex-col h-screen w-full bg-white overflow-hidden">
+      {/* ---------- Header ---------- */}
+      <header className="h-14 flex items-center justify-between border-b border-neutral-200 bg-white px-6 shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 border border-neutral-300 rounded-md px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+            className="p-1.5 border border-neutral-300 rounded-md hover:bg-neutral-100"
           >
             <MoveLeft size={16} />
           </button>
-          <h2 className="text-xl font-semibold">{quiz.name}</h2>
+          <h2 className="text-lg font-bold text-black truncate max-w-md">
+            {quizMeta.name}
+          </h2>
         </div>
 
-        <div className="flex gap-5 items-center text-neutral-700">
+        <div className="flex gap-4 text-xs font-medium text-neutral-700">
           <div className="flex items-center gap-1">
-            <Clock size={18} className="text-neutral-500" />
-            <span>{quiz.duration} min</span>
+            <Clock size={14} />
+            <span>{quizMeta.duration} min</span>
           </div>
           <div className="flex items-center gap-1">
-            <ListChecks size={18} className="text-neutral-500" />
-            <span>{quiz.totalQuestions}</span>
+            <ListChecks size={14} />
+            <span>{quizMeta.totalQuestions}</span>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Table */}
-      <div className="w-full h-[560px] overflow-y-scroll border border-neutral-800 rounded-lg shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-neutral-800 text-white sticky top-0">
-            <tr>
-              <th className="px-4 py-3">S.No</th>
-              <th className="px-4 py-3">Question</th>
-              {Array.from({ length: maxOptions }).map((_, i) => (
-                <th key={i} className="px-4 py-3">
-                  Option {i + 1}
-                </th>
-              ))}
-              <th className="px-4 py-3">Multiple</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
+      {/* ---------- Content ---------- */}
+      <main className="flex-1 overflow-hidden p-4 snap-y snap-mandatory">
+        <div className="h-full overflow-y-auto w-full">
+          {questions.map((q, index) => {
+            const parsed = parseCodeBlock(q.question);
+            const isRichContent = parsed.isRich || Boolean(q.questionImage);
 
-          <tbody className="divide-y divide-neutral-300">
-            {currentQuestions.map((q) => (
-              <tr key={q.sno} className="hover:bg-neutral-50">
-                <td className="px-4 py-3">{q.sno}</td>
-
-                {/* Question cell */}
-                <td className="px-4 py-3 max-w-[350px]">
-                  <div className="flex flex-col gap-2">
-                    <span>{q.question}</span>
-
-                    {q.questionImage && (
-                      <img
-                        src={q.questionImage}
-                        alt="question"
-                        className="max-h-[120px] object-contain border rounded"
-                      />
-                    )}
+            return (
+              <div
+                key={q.sno}
+                className={`${isRichContent ? "max-h-fit" : "max-h-[500px]"}
+                bg-white border border-neutral-200 rounded-xl p-4 shadow-sm mb-6 snap-start flex gap-6`}
+              >
+                {/* LEFT */}
+                <div className="w-1/2 flex gap-4 border-r border-neutral-100 pr-4 overflow-y-auto">
+                  <span className="text-2xl font-black">{index + 1}.</span>
+                  <div className="flex-1">
+                    <CodeBlock
+                      raw={q.question}
+                      image={q.questionImage || null}
+                    />
                   </div>
-                </td>
+                </div>
 
-                {/* Options */}
-                {Array.from({ length: maxOptions }).map((_, i) => {
-                  const opt = q.options[i];
-                  return (
-                    <td key={i} className="px-4 py-3">
-                      {opt ? (
-                        <div className="flex flex-col gap-1">
-                          {opt.text && <span>{opt.text}</span>}
+                {/* RIGHT */}
+                <div className="w-1/2 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="px-3 py-1 bg-black text-white rounded-full text-[10px] font-bold uppercase">
+                      {q.multiple ? "Multiple Choice" : "Single Choice"}
+                    </span>
+
+                    <button
+                      onClick={() => {
+                        setEditingQuestion(q);
+                        setEditOpen(true);
+                      }}
+                      className="flex items-center gap-1 text-xs font-semibold text-neutral-500 hover:text-blue-600"
+                    >
+                      <Pencil size={14} /> Edit
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto pr-1">
+                    {q.options.map((opt, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 border border-neutral-100 rounded-lg px-3 py-2 mb-2"
+                      >
+                        <span className="font-bold text-neutral-400">
+                          {String.fromCharCode(65 + idx)}
+                        </span>
+                        <div className="flex-1">
+                          {opt.text && <p>{opt.text}</p>}
                           {opt.image && (
                             <img
                               src={opt.image}
-                              alt={`opt-${i}`}
-                              className="max-h-[100px] object-contain border rounded"
+                              className="mt-2 h-20 object-contain"
                             />
                           )}
                         </div>
-                      ) : (
-                        <span className="text-neutral-400">N/A</span>
-                      )}
-                    </td>
-                  );
-                })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
 
-                {/* Multiple */}
-                <td className="px-4 py-3">
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full ${
-                      q.multiple
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {q.multiple ? "Yes" : "No"}
-                  </span>
-                </td>
+          <div ref={loaderRef} className="h-8 text-center text-xs">
+            {loading && <div className="animate-pulse">Loading…</div>}
+            {!hasMore && (
+              <div className="text-neutral-400 italic">No more questions</div>
+            )}
+          </div>
+        </div>
+      </main>
 
-                {/* Actions */}
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => navigate(`/edit-question/${q.sno}`)}
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                  >
-                    <Pencil size={14} /> Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* ---------- Edit Modal ---------- */}
+      <EditQuestionModal
+        open={editOpen}
+        question={editingQuestion}
+        saving={saving}
+        onClose={() => {
+          setEditOpen(false);
+          setEditingQuestion(null);
+        }}
+        onSave={handleUpdateQuestion}
+      />
+    </div>
+  );
+};
 
-      {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <span>
-          Page {page} of {totalPages}
-        </span>
+/* ===================== Modal ===================== */
 
-        <div className="flex gap-2">
+const EditQuestionModal = ({
+  open,
+  question,
+  saving,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  question: Question | null;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (q: Question) => void;
+}) => {
+  const [form, setForm] = useState<Question | null>(question);
+
+  useEffect(() => {
+    setForm(question);
+  }, [question]);
+
+  if (!open || !form) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+      <div className="bg-white w-[900px] max-h-[90vh] rounded-xl shadow-xl flex flex-col">
+        <div className="px-6 py-4 border-b flex justify-between">
+          <h3 className="font-bold text-lg">Edit Question</h3>
+          <button onClick={onClose}>×</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <textarea
+            className="w-full border rounded-md p-3"
+            rows={4}
+            value={form.question}
+            onChange={(e) => setForm({ ...form, question: e.target.value })}
+          />
+
+          {form.options.map((opt, idx) => (
+            <input
+              key={idx}
+              className="w-full border rounded-md p-2"
+              value={opt.text || ""}
+              placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+              onChange={(e) => {
+                const next = [...form.options];
+                next[idx] = { ...next[idx], text: e.target.value };
+                setForm({ ...form, options: next });
+              }}
+            />
+          ))}
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.multiple}
+              onChange={(e) => setForm({ ...form, multiple: e.target.checked })}
+            />
+            Multiple correct answers
+          </label>
+        </div>
+
+        <div className="border-t px-6 py-4 flex justify-end gap-3">
+          <button onClick={onClose}>Cancel</button>
           <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="border rounded-md px-3 py-1 disabled:opacity-50"
+            disabled={saving}
+            onClick={() => onSave(form)}
+            className="bg-black text-white px-4 py-2 rounded-md disabled:opacity-50"
           >
-            Previous
-          </button>
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="border rounded-md px-3 py-1 disabled:opacity-50"
-          >
-            Next
+            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

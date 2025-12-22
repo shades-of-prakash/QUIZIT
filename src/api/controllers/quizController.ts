@@ -151,7 +151,7 @@ export async function createQuizUsers(req: Request) {
 export async function getSingleQuiz(req: Request) {
   try {
     const body = await req.json();
-    const { quizId } = body;
+    const { quizId, page = 1, limit = 5 } = body;
 
     if (!quizId) {
       return new Response(JSON.stringify({ message: "Quiz ID is required" }), {
@@ -171,20 +171,37 @@ export async function getSingleQuiz(req: Request) {
       });
     }
 
-    const shuffled = [...quiz.questions].sort(() => 0.5 - Math.random());
-    const selectedQuestions = shuffled.slice(0, quiz.quizQuestions);
+    const stableQuestions = quiz.questions;
 
-    const { correct_options, questions, ...quizMeta } = quiz;
+    const totalQuestions = Math.min(quiz.quizQuestions, stableQuestions.length);
 
-    const modifiedQuiz = {
-      ...quizMeta,
-      questions: selectedQuestions,
-    };
+    const start = (page - 1) * limit;
+    const end = start + limit;
 
-    return new Response(JSON.stringify(modifiedQuiz), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    const paginatedQuestions = stableQuestions
+      .slice(0, totalQuestions)
+      .slice(start, end);
+
+    const totalPages = Math.ceil(totalQuestions / limit);
+
+    const { questions, correct_options, ...quizMeta } = quiz;
+
+    return new Response(
+      JSON.stringify({
+        ...quizMeta,
+        questions: paginatedQuestions,
+        pagination: {
+          page,
+          limit,
+          totalQuestions,
+          totalPages,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("getSingleQuiz error:", err);
     return new Response(JSON.stringify({ message: "Server error" }), {
@@ -1221,4 +1238,81 @@ function safeFolderName(name: string) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9-_]/gi, "_");
+}
+
+export async function updateQuizQuestion(req: Request) {
+  try {
+    const body = await req.json();
+
+    const {
+      quizId,
+      sno,
+      question,
+      questionImage = null,
+      options,
+      multiple,
+    } = body;
+
+    if (!quizId || !sno) {
+      return new Response(
+        JSON.stringify({ message: "quizId and sno are required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (!question || !Array.isArray(options) || options.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "Invalid question payload" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const quizObjectId = ObjectId.createFromHexString(quizId);
+
+    const updateResult = await quizzesCollection().findOneAndUpdate(
+      {
+        _id: quizObjectId,
+        "questions.sno": sno,
+      },
+      {
+        $set: {
+          "questions.$.question": question,
+          "questions.$.questionImage": questionImage,
+          "questions.$.options": options,
+          "questions.$.multiple": Boolean(multiple),
+          "questions.$.updatedAt": new Date(),
+        },
+      },
+      {
+        returnDocument: "after",
+        projection: {
+          questions: { $elemMatch: { sno } },
+        },
+      },
+    );
+
+    if (!updateResult.value) {
+      return new Response(JSON.stringify({ message: "Question not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: "Question updated successfully",
+        question: updateResult.value.questions[0],
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  } catch (err) {
+    console.error("updateQuizQuestion error:", err);
+    return new Response(JSON.stringify({ message: "Server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }

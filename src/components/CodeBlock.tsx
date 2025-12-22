@@ -7,11 +7,34 @@ type CodeBlockProps = {
   image: string | null;
 };
 
+export function parseCodeBlock(block: string) {
+  const match = block.match(/```(\w+)\n([\s\S]*?)```/);
+
+  if (match) {
+    const lang = match[1] as
+      | "c"
+      | "tsx"
+      | "typescript"
+      | "javascript"
+      | "python"
+      | "java";
+    const code = match[2].trim();
+    const question = block.slice(0, match.index).trim();
+
+    return { question, lang, code, isRich: true };
+  }
+
+  return {
+    question: block.trim(),
+    lang: "plaintext" as const,
+    code: "",
+    isRich: false,
+  };
+}
+
 const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
   const [html, setHtml] = useState<string>("");
   const { lang, code, question } = parseCodeBlock(raw);
-
-  console.log(lang, code, question);
 
   useEffect(() => {
     async function load() {
@@ -20,7 +43,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
         langs: ["tsx", "typescript", "javascript", "c", "python", "java"],
       });
 
-      const content = code ?? question;
+      const content = code || question;
 
       const highlighted = highlighter.codeToHtml(content, {
         lang: lang ?? "plaintext",
@@ -36,7 +59,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
   return (
     <div className="w-full h-full rounded-md overflow-hidden flex flex-col gap-2">
       {question && (
-        <div className="w-full  py-1 text-lg  font-geist">{question}</div>
+        <div className="w-full py-1 text-lg font-geist">{question}</div>
       )}
       {image && (
         <img src={image} alt="Question" className="w-[300px]" loading="lazy" />
@@ -55,30 +78,5 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
     </div>
   );
 };
-
-function parseCodeBlock(block: string) {
-  const match = block.match(/```(\w+)\n([\s\S]*?)```/);
-
-  if (match) {
-    const lang = match[1] as
-      | "c"
-      | "tsx"
-      | "typescript"
-      | "javascript"
-      | "python"
-      | "java";
-
-    const code = match[2].trim();
-    const question = block.slice(0, match.index).trim();
-
-    return { question, lang, code };
-  }
-
-  return {
-    question: block.trim(),
-    lang: "plaintext" as const,
-    code: "",
-  };
-}
 
 export default CodeBlock;
