@@ -40,7 +40,7 @@ function CustomSelect({
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className={`w-full border border-neutral-800/30  ${stylePropsOfSelect||"px-4 py-2"} rounded-md focus:outline-none focus:ring-2 focus:ring-black flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors`}
+				className={`w-full h-9 flex items-center justify-between border border-zinc-200 ${stylePropsOfSelect||"px-3"} text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 focus:border-zinc-950 bg-white hover:bg-zinc-50 transition-colors`}
 			>
 				<span className={selectedOption ? "text-black" : "text-neutral-500"}>
 					{selectedOption ? selectedOption.label : placeholder}
@@ -53,7 +53,7 @@ function CustomSelect({
 			</button>
 
 			{isOpen && (
-				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400">
+				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-zinc-200 rounded-md shadow-md z-50 max-h-60 overflow-y-auto p-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-300">
 					{options.map((option) => (
 						<button
 							key={option.value}
@@ -62,10 +62,10 @@ function CustomSelect({
 								onChange(option.value);
 								setIsOpen(false);
 							}}
-							className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors first:rounded-t-md last:rounded-b-md ${
+							className={`w-full px-2 py-1.5 text-sm rounded-sm text-left transition-colors ${
 								value === option.value
-									? "bg-black text-white hover:bg-neutral-800"
-									: "text-black hover:bg-neutral-100"
+									? "bg-zinc-100 text-zinc-900 font-medium"
+									: "text-zinc-900 hover:bg-zinc-100 hover:text-zinc-900"
 							}`}
 						>
 							{option.label}

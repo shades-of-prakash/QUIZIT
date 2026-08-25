@@ -1,8 +1,7 @@
 import React, { useState, lazy, Suspense, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import Box from "../assets/box.webp";
-import { Trash } from "lucide-react";
+import { Trash, Inbox, Loader2 } from "lucide-react";
 import CreateQuizModal from "./CreatequizModal";
 
 interface Quiz {
@@ -73,17 +72,17 @@ export default function Createquiz() {
   });
 
   return (
-    <div className="w-full h-full flex flex-col bg-green-950">
+    <div className="w-full h-full flex flex-col bg-zinc-50 font-sans text-zinc-950">
       {/* Header */}
-      <header className="flex items-center justify-between h-14 bg-white border-b border-neutral-100 px-4">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold">Create New Quiz</h1>
-          <p className="text-sm text-gray-600">
+      <header className="flex items-center justify-between h-16 bg-white border-b border-zinc-300 px-6 shrink-0">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-xl font-bold tracking-tight">Create New Quiz</h1>
+          <p className="text-sm text-zinc-500">
             Ensure all questions are correct before saving.
           </p>
         </div>
         <button
-          className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition"
+          className="inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 transition-colors"
           onClick={() => setShowModal(true)}
         >
           Create Quiz
@@ -91,11 +90,11 @@ export default function Createquiz() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 bg-white p-4 overflow-x-auto">
+      <main className="flex-1 bg-zinc-100/50 p-2 md:p-2 overflow-y-auto flex flex-col">
         {isLoading ? (
-          <div className="w-full h-full flex flex-col items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-600">Loading quizzes...</p>
+          <div className="w-full h-full flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-zinc-400 mb-4" />
+            <p className="text-sm text-zinc-500">Loading quizzes...</p>
           </div>
         ) : isError ? (
           <p className="text-red-600">Error: {error?.message}</p>
@@ -140,16 +139,14 @@ export default function Createquiz() {
 }
 
 const EmptyState = React.memo(() => (
-  <div className="flex border border-neutral-400 rounded-md flex-col items-center justify-center py-16 text-gray-500">
-    <img
-      src={Box}
-      alt="No quizzes"
-      width={64}
-      height={64}
-      className="w-16 h-16 mb-4 object-contain"
-      loading="lazy"
-    />
-    <p>No quizzes available</p>
+  <div className="flex-1 w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-zinc-200 border-dashed rounded-xl shadow-sm">
+    <div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+      <Inbox className="w-6 h-6 text-zinc-400" />
+    </div>
+    <h3 className="text-sm font-semibold text-zinc-900 mb-1">No quizzes available</h3>
+    <p className="text-sm text-zinc-500 text-center max-w-sm">
+      You haven't created any quizzes yet. Click "Create Quiz" to get started.
+    </p>
   </div>
 ));
 
@@ -185,15 +182,16 @@ const QuizTable = React.memo(
               <td className="px-4 py-2 text-center">{quiz.questions}</td>
               <td className="px-4 py-2 text-center">{quiz.quizQuestions}</td>
               <td className="px-4 py-2 text-center">{quiz.duration}</td>
-              <td className="px-4 py-2 flex gap-2 justify-center">
+              <td className="px-4 py-2 flex justify-center">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(e, quiz.id, quiz.name);
                   }}
-                  className="flex gap-1 items-center bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-md transition"
+                  className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
+                  title="Delete quiz"
                 >
-                  <Trash size={16} /> Delete
+                  <Trash size={18} />
                 </button>
               </td>
             </tr>

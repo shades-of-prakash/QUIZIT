@@ -96,23 +96,23 @@ export default function CreateQuizModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-      <div className="w-[520px] bg-white rounded-lg shadow-xl p-6 space-y-6">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center font-sans">
+      <div className="w-full max-w-[420px] bg-white rounded-xl shadow-lg p-5 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Create New Quiz</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-zinc-950">Create New Quiz</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-neutral-100 rounded"
+            className="p-1.5 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100 rounded-md transition-colors"
           >
-            <X />
+            <X size={18} />
           </button>
         </div>
 
         {/* FILE INPUTS */}
         <div className="flex items-center gap-3">
           <FileBox
-            icon={<Upload />}
+            icon={<Upload size={20} />}
             title="Upload quiz.csv"
             subtitle="UTF-8 required"
             file={csvFile}
@@ -137,8 +137,8 @@ export default function CreateQuizModal({
             value={duration}
             onChange={setDuration}
           />
-          <div>
-            <label className="text-sm font-medium">Team size</label>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-zinc-950 leading-none">Team size</label>
             <CustomSelect
               value={teamSize}
               onChange={setTeamSize}
@@ -149,14 +149,14 @@ export default function CreateQuizModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2">
           <button
             disabled={!isFormValid || loading}
             onClick={handleCreateQuiz}
-            className={`px-6 py-2 rounded-md font-medium ${
+            className={`inline-flex items-center justify-center h-9 px-4 text-sm font-medium rounded-md transition-colors ${
               isFormValid
-                ? "bg-black text-white hover:bg-neutral-800"
-                : "bg-neutral-300 text-neutral-500 cursor-not-allowed"
+                ? "bg-zinc-900 text-zinc-50 shadow-sm hover:bg-zinc-900/90"
+                : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
             }`}
           >
             {loading ? "Creating..." : "Create Quiz"}
@@ -171,13 +171,13 @@ export default function CreateQuizModal({
 
 function Input({ label, value, onChange, type = "text" }: any) {
   return (
-    <div>
-      <label className="text-sm font-medium">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-zinc-950 leading-none">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full mt-1 px-3 py-2 border border-neutral-300 rounded-md focus:ring-1 focus:ring-black focus:outline-none"
+        className="w-full h-9 px-3 py-1 text-sm border border-zinc-200 rounded-md focus:outline-none focus:ring-1 focus:ring-zinc-950 focus:border-zinc-950 transition-colors"
       />
     </div>
   );
@@ -185,13 +185,13 @@ function Input({ label, value, onChange, type = "text" }: any) {
 
 function FileBox({ icon, title, subtitle, file, accept, onChange }: any) {
   return (
-    <label className="w-full h-full border border-dashed border-neutral-400 rounded-lg p-4 text-center cursor-pointer hover:border-black transition">
+    <label className="w-full h-full border border-dashed border-zinc-300 rounded-lg py-4 px-3 text-center cursor-pointer hover:border-zinc-950 transition-colors bg-zinc-50/50 hover:bg-zinc-100/50">
       <div className="flex flex-col items-center gap-1">
-        {icon}
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-neutral-500">{subtitle}</p>
+        <div className="text-zinc-500">{icon}</div>
+        <p className="text-sm font-medium text-zinc-950 mt-1">{title}</p>
+        <p className="text-xs text-zinc-500">{subtitle}</p>
         <input type="file" accept={accept} hidden onChange={onChange} />
-        {file && <p className="text-xs font-semibold mt-1">{file.name}</p>}
+        {file && <p className="text-xs font-semibold text-green-600 mt-2 truncate w-full px-2">{file.name}</p>}
       </div>
     </label>
   );

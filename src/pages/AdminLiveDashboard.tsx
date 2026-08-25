@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Loader2, Pause, Play, XOctagon, Check } from "lucide-react";
+import { Loader2, Pause, Play, XOctagon, Check, Inbox } from "lucide-react";
 import { toast } from "sonner";
-import Box from "../assets/box.webp";
 
 interface RequestItem {
 	_id: string;
@@ -116,21 +115,21 @@ const AdminLiveDashboard = () => {
 	const displayRequests = requests.filter(r => r.status !== "REJECTED" && r.status !== "COMPLETED"); // Hide rejected and completed from the main table, keep pending/approved/paused
 
 	return (
-		<div className="w-full h-full flex flex-col bg-white">
+		<div className="w-full h-full flex flex-col bg-zinc-50 font-sans text-zinc-950">
 			{/* Header matching Createquiz.tsx */}
-			<header className="flex items-center justify-between h-14 bg-white border-b border-neutral-100 px-4">
-				<div className="flex flex-col">
-					<h1 className="text-xl font-bold">Live Dashboard</h1>
-					<p className="text-sm text-gray-600">
+			<header className="flex items-center justify-between h-16 bg-white border-b border-zinc-300 px-6 shrink-0">
+				<div className="flex flex-col gap-0.5">
+					<h1 className="text-xl font-bold tracking-tight">Requests</h1>
+					<p className="text-sm text-zinc-500">
 						Manage exam logins and active sessions
 					</p>
 				</div>
 				<div className="flex gap-4">
-					<div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium">
 						<span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
 						Waiting Room: {requests.filter(r => r.status === "PENDING").length}
 					</div>
-					<div className="flex items-center gap-2 text-sm text-gray-600 font-medium border-l border-gray-300 pl-4">
+					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium border-l border-zinc-300 pl-4">
 						<span className="w-2 h-2 rounded-full bg-green-500"></span>
 						Active Sessions: {requests.filter(r => r.status === "APPROVED" || r.status === "PAUSED").length}
 					</div>
@@ -138,26 +137,24 @@ const AdminLiveDashboard = () => {
 			</header>
 
 			{/* Main content */}
-			<main className="flex-1 bg-white p-4 overflow-x-auto">
+			<main className="flex-1 bg-zinc-100/50 p-2 md:p-2 overflow-y-auto flex flex-col">
 				{loading && displayRequests.length === 0 ? (
-					<div className="w-full h-full flex flex-col items-center justify-center py-16">
-						<div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
-						<p className="text-gray-600">Loading sessions...</p>
+					<div className="w-full h-full flex flex-col items-center justify-center py-20">
+						<Loader2 className="w-8 h-8 animate-spin text-zinc-400 mb-4" />
+						<p className="text-sm text-zinc-500">Loading sessions...</p>
 					</div>
 				) : displayRequests.length === 0 ? (
-					<div className="flex border border-neutral-400 rounded-md flex-col items-center justify-center py-16 text-gray-500">
-						<img
-							src={Box}
-							alt="No sessions"
-							width={64}
-							height={64}
-							className="w-16 h-16 mb-4 object-contain"
-							loading="lazy"
-						/>
-						<p>No active sessions or waiting students</p>
+					<div className="flex-1 w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-zinc-200 border-dashed rounded-xl shadow-sm">
+						<div className="w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+							<Inbox className="w-6 h-6 text-zinc-400" />
+						</div>
+						<h3 className="text-sm font-semibold text-zinc-900 mb-1">No active sessions or waiting students</h3>
+						<p className="text-sm text-zinc-500 text-center max-w-sm">
+							When students try to join a quiz, their requests will appear here.
+						</p>
 					</div>
 				) : (
-					<div className="overflow-hidden rounded-md border border-gray-300 shadow-sm">
+					<div className="overflow-hidden rounded-md border border-zinc-200 shadow-sm bg-white">
 						<table className="w-full text-sm">
 							<thead className="bg-black/90 text-gray-300">
 								<tr>
@@ -213,7 +210,7 @@ const AdminLiveDashboard = () => {
 													</button>
 												</>
 											)}
-											
+
 											{req.status === "APPROVED" && (
 												<button
 													onClick={() => handleUpdateStatus(req._id, "PAUSED")}
@@ -223,7 +220,7 @@ const AdminLiveDashboard = () => {
 													<Pause size={14} /> Pause
 												</button>
 											)}
-											
+
 											{req.status === "PAUSED" && (
 												<button
 													onClick={() => handleUpdateStatus(req._id, "APPROVED")}
