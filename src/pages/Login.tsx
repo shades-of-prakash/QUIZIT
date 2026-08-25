@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
 import { useQuiz, type QuizSelectOption } from "../context/quizNamesContext";
@@ -11,6 +11,14 @@ import loginImage830 from "../assets/login_q86a9p_c_scale,w_830.webp";
 import loginImage1106 from "../assets/login_q86a9p_c_scale,w_1106.webp";
 import loginImage1381 from "../assets/login_q86a9p_c_scale,w_1381.webp";
 import loginImage1400 from "../assets/login_q86a9p_c_scale,w_1400.webp";
+
+import meme1 from "../assets/memes/meme1.gif";
+import meme2 from "../assets/memes/meme2.gif";
+
+const WAITING_MEMES = [
+	{ src: meme1 },
+	{ src: meme2 },
+];
 
 const Step1 = ({
 	formData,
@@ -173,96 +181,157 @@ const Step1 = ({
 	</>
 );
 
+import { Loader2, Loader } from "lucide-react";
+
 const Step2 = ({
 	formData,
-	handleChange,
 	handlePreviousStep,
-	loginMutationIsLoading,
 	errors,
+	setErrors
 }: {
 	formData: any;
-	handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	handlePreviousStep: () => void;
-	loginMutationIsLoading: boolean;
 	errors: Record<string, string>;
+	setErrors: (errors: any) => void;
 }) => {
-	const [showPassword, setShowPassword] = useState(false);
+	const navigate = useNavigate();
+	const [status, setStatus] = useState("PENDING"); // PENDING, APPROVED, REJECTED
+	const [randomMeme, setRandomMeme] = useState(WAITING_MEMES[0]);
+
+	useEffect(() => {
+		setRandomMeme(WAITING_MEMES[Math.floor(Math.random() * WAITING_MEMES.length)]);
+		let intervalId: Timer;
+
+		const startPolling = async () => {
+			intervalId = setInterval(async () => {
+				try {
+					const statusRes = await fetch(
+						`/api/approval/status?quizId=${formData.quizId}&participant1RollNo=${formData.participant1RollNo}`
+					);
+					const statusData = await statusRes.json();
+
+					if (statusData.status === "APPROVED") {
+						setStatus("APPROVED");
+						clearInterval(intervalId);
+						// Give it a second to show the success state then navigate
+						setTimeout(() => {
+							window.location.href = "/instructions";
+						}, 1500);
+					} else if (statusData.status === "REVOKED" || statusData.status === "REJECTED") {
+						setStatus("REJECTED");
+						setErrors({ global: "Your request was declined by the Invigilator." });
+						clearInterval(intervalId);
+					}
+				} catch (pollErr) {
+					console.error("Polling error:", pollErr);
+				}
+			}, 2000);
+		};
+
+		startPolling();
+
+		const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+			if (status === "PENDING" || status === "REQUESTING") {
+				e.preventDefault();
+			}
+		};
+
+		const handleUnload = () => {
+			if (status === "PENDING" || status === "REQUESTING") {
+				const payload = JSON.stringify({
+					quizId: formData.quizId,
+					participant1RollNo: formData.participant1RollNo
+				});
+				const blob = new Blob([payload], { type: 'application/json' });
+				navigator.sendBeacon('/api/approval/cancel', blob);
+			}
+		};
+
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		window.addEventListener("unload", handleUnload);
+
+		return () => {
+			if (intervalId) clearInterval(intervalId);
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+			window.removeEventListener("unload", handleUnload);
+		};
+	}, [formData, setErrors, navigate, status]);
 
 	return (
-		<div className="flex flex-col items-center gap-5">
-			{/* Instruction text */}
-			<span className="text-base text-neutral-600 text-center">
-				Log in with the credentials provided by your coordinators.
-			</span>
+		<div className="flex flex-col items-center gap-6 py-8">
+			{status === "REQUESTING" && (
+				<>
+					<Loader2 className="w-10 h-10 animate-spin text-neutral-500" />
+					<span className="text-base text-neutral-600 text-center font-medium">
+						Sending request to Admin...
+					</span>
+				</>
+			)}
 
-			<div className="flex flex-col w-full gap-3">
-				{/* Username */}
-				<div className="flex flex-col gap-2">
-					<label className="text-sm text-neutral-800">Username</label>
-					<input
-						type="text"
-						name="username"
-						value={formData.username}
-						onChange={handleChange}
-						className="placeholder:text-sm py-2 px-4 border border-neutral-300 rounded-md focus:outline-none focus:border-black"
-						placeholder="Enter your username"
-						required
-					/>
-					{errors.username && (
-						<p className="text-red-500 text-sm">{errors.username}</p>
-					)}
-				</div>
-
-				{/* Password */}
-				<div className="flex flex-col gap-2">
-					<label className="text-sm text-neutral-800">Password</label>
-					<div className="relative">
-						<input
-							type={showPassword ? "text" : "password"}
-							name="password"
-							value={formData.password}
-							onChange={handleChange}
-							className="w-full placeholder:text-sm py-2 px-4 pr-10 border border-neutral-300 rounded-md focus:outline-none focus:border-black"
-							placeholder="Enter your password"
-							required
+			{status === "PENDING" && (
+				<div className="flex flex-col items-center w-full max-w-md mx-auto gap-6">
+					{/* Meme */}
+					<div className="flex flex-col items-center gap-3">
+						<img
+							src={randomMeme?.src}
+							alt="Waiting meme"
+							className="w-full max-w-[200px] h-auto object-contain rounded-xl shadow-sm"
 						/>
-						<button
-							type="button"
-							onClick={() => setShowPassword(!showPassword)}
-							className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-black"
-							tabIndex={-1}
-						>
-							{showPassword ? (
-								<EyeOff className="w-5 h-5" />
-							) : (
-								<Eye className="w-5 h-5" />
-							)}
-						</button>
 					</div>
-					{errors.password && (
-						<p className="text-red-500 text-sm">{errors.password}</p>
-					)}
+
+					{/* Status Header */}
+					<div className="flex flex-col items-center mt-2">
+						<Loader className="w-5 h-5 text-neutral-400 animate-spin mb-6 mt-4" />
+						<h2 className="text-xl text-black font-bold tracking-tight">
+							Waiting for Approval
+						</h2>
+						<p className="text-sm text-neutral-500 text-center mt-2 px-6">
+							Please wait while the Invigilator verifies your details and starts your exam.
+						</p>
+
+					</div>
 				</div>
-			</div>
+			)}
 
-			{/* Navigation buttons */}
-			<div className="flex w-full gap-3 mt-4">
-				<button
-					type="button"
-					onClick={handlePreviousStep}
-					className="px-4 py-2 text-sm border border-neutral-800/40 text-neutral-800 rounded-md hover:bg-gray-100 transition-colors"
-				>
-					Previous
-				</button>
+			{status === "APPROVED" && (
+				<>
+					<div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+						<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+						</svg>
+					</div>
+					<div className="flex flex-col items-center gap-1">
+						<span className="text-lg text-green-600 font-semibold">
+							Approved!
+						</span>
+						<span className="text-sm text-neutral-500 text-center">
+							Starting exam...
+						</span>
+					</div>
+				</>
+			)}
 
-				<button
-					type="submit"
-					disabled={loginMutationIsLoading}
-					className="px-4 py-2 text-sm bg-black text-white rounded-md disabled:opacity-50 hover:bg-gray-800 transition-colors"
-				>
-					{loginMutationIsLoading ? "Logging in..." : "Continue"}
-				</button>
-			</div>
+			{status === "REJECTED" && (
+				<>
+					<div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+						<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</div>
+					<div className="flex flex-col items-center gap-1">
+						<span className="text-lg text-red-600 font-semibold">
+							Request Declined
+						</span>
+					</div>
+					<button
+						type="button"
+						onClick={handlePreviousStep}
+						className="mt-4 px-4 py-2 text-sm border border-neutral-800/40 text-neutral-800 rounded-md hover:bg-gray-100 transition-colors"
+					>
+						Go Back
+					</button>
+				</>
+			)}
 		</div>
 	);
 };
@@ -310,6 +379,8 @@ const Login: React.FC = () => {
 		}
 	};
 
+	const [isRequesting, setIsRequesting] = useState(false);
+
 	return (
 		<div className="w-screen h-dvh flex">
 			<div className="w-1/2 h-full bg-white overflow-hidden flex items-center justify-center">
@@ -333,9 +404,8 @@ const Login: React.FC = () => {
 				<div className="px-20 py-5 flex flex-col gap-3 justify-center items-center w-full h-full rounded-xl">
 					<div className="text-center flex flex-col gap-1">
 						<h1
-							className={`font-bold ${
-								currentStep === 2 ? "text-3xl" : "text-2xl"
-							}`}
+							className={`font-bold ${currentStep === 2 ? "text-3xl" : "text-2xl"
+								}`}
 						>
 							QUIZ<span className="text-accent">IT</span>
 						</h1>
@@ -345,14 +415,29 @@ const Login: React.FC = () => {
 					</div>
 
 					<form
-						onSubmit={(e) => {
+						onSubmit={async (e) => {
 							e.preventDefault();
 							if (currentStep === 1) {
-								setCurrentStep(2);
-							} else {
-								login(formData).catch((err: any) =>
-									setErrors({ global: err.message })
-								);
+								setIsRequesting(true);
+								setErrors({ ...errors, global: "" });
+								try {
+									const res = await fetch("/api/approval/request", {
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify(formData),
+									});
+
+									if (!res.ok) {
+										const data = await res.json();
+										setErrors({ ...errors, global: data.message || "Failed to request approval" });
+									} else {
+										setCurrentStep(2);
+									}
+								} catch (err) {
+									setErrors({ ...errors, global: "Network error while requesting approval" });
+								} finally {
+									setIsRequesting(false);
+								}
 							}
 						}}
 						className="w-full max-w-xl flex flex-col gap-3"
@@ -376,9 +461,17 @@ const Login: React.FC = () => {
 								<div className="flex items-center justify-start">
 									<button
 										type="submit"
-										className="py-2 px-4 mt-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 transition-colors"
+										disabled={isRequesting}
+										className="py-2 px-4 mt-2 bg-black text-white rounded-md text-sm hover:bg-gray-800 transition-colors disabled:bg-gray-500 flex items-center gap-2"
 									>
-										Continue
+										{isRequesting ? (
+											<>
+												<Loader2 className="w-4 h-4 animate-spin" />
+												Processing...
+											</>
+										) : (
+											"Continue"
+										)}
 									</button>
 								</div>
 							</>
@@ -387,10 +480,9 @@ const Login: React.FC = () => {
 						{currentStep === 2 && (
 							<Step2
 								formData={formData}
-								handleChange={handleChange}
 								handlePreviousStep={() => setCurrentStep(1)}
-								loginMutationIsLoading={loginMutationIsLoading}
 								errors={errors}
+								setErrors={setErrors}
 							/>
 						)}
 					</form>

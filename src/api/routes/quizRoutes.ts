@@ -16,6 +16,7 @@ import {
   downloadQuizResultsController,
   updateTabSwitchCountController,
   updateQuizQuestion,
+  uploadImageController,
 } from "../controllers/quizController";
 
 export const quizRoutes = {
@@ -73,5 +74,8 @@ export const quizRoutes = {
 
   "/api/update-question": {
     POST: updateQuizQuestion,
+  },
+  "/api/upload-image": {
+    POST: uploadImageController,
   },
 };

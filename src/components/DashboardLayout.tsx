@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router";
-import { CircleQuestionMark, Trophy } from "lucide-react";
+import { CircleQuestionMark, Trophy, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../context/authContext";
@@ -17,6 +17,11 @@ function DashboardLayout() {
       name: "Quiz",
       link: "/admin/createquiz",
       icon: <CircleQuestionMark size={20} />,
+    },
+    {
+      name: "Live Dashboard",
+      link: "/admin/live",
+      icon: <Activity size={20} />,
     },
     {
       name: "Results",

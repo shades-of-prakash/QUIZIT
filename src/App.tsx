@@ -17,6 +17,7 @@ const Instructions = lazy(() => import("./components/Instructions"));
 const Submission = lazy(() => import("./components/Submission"));
 const Results = lazy(() => import("./components/Results"));
 const Createquiz = lazy(() => import("./components/Createquiz"));
+const AdminLiveDashboard = lazy(() => import("./pages/AdminLiveDashboard"));
 const SingleQuizHandler = lazy(() => import("./components/SingleQuizHandler"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
@@ -95,6 +96,7 @@ export function App() {
                         element={<Navigate to="Createquiz" replace />}
                       />
                       <Route path="results" element={<Results />} />
+                      <Route path="live" element={<AdminLiveDashboard />} />
                       <Route path="Createquiz" element={<Createquiz />} />
                       <Route
                         path="Createquiz/:id"

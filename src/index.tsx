@@ -3,6 +3,7 @@ import index from "./index.html";
 import { authRoutes } from "./api/routes/authRoutes";
 import { quizRoutes } from "./api/routes/quizRoutes";
 import { userRoutes } from "./api/routes/userRoutes";
+import { approvalRoutes } from "./api/routes/approvalRoutes";
 import { connectDB } from "./api/db";
 import path from "path";
 
@@ -38,6 +39,7 @@ async function startServer() {
       ...authRoutes,
       ...quizRoutes,
       ...userRoutes,
+      ...approvalRoutes,
 
       /* ---------- SPA Fallback ---------- */
       "/*": index,

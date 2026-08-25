@@ -151,7 +151,7 @@ export async function createQuizUsers(req: Request) {
 export async function getSingleQuiz(req: Request) {
   try {
     const body = await req.json();
-    const { quizId, page = 1, limit = 5 } = body;
+    const { quizId, page = 1, limit = 5, filterNeedsImage = false, filterHasCode = false } = body;
 
     if (!quizId) {
       return new Response(JSON.stringify({ message: "Quiz ID is required" }), {
@@ -171,16 +171,26 @@ export async function getSingleQuiz(req: Request) {
       });
     }
 
-    const stableQuestions = quiz.questions;
+    let stableQuestions = quiz.questions;
 
-    const totalQuestions = Math.min(quiz.quizQuestions, stableQuestions.length);
+    if (filterNeedsImage) {
+      stableQuestions = stableQuestions.filter((q: any) => {
+        return q.needsImage || q.options.some((o: any) => !o.text && !o.image);
+      });
+    }
+
+    if (filterHasCode) {
+      stableQuestions = stableQuestions.filter((q: any) => {
+        return q.question && q.question.includes('```');
+      });
+    }
+
+    const totalQuestions = stableQuestions.length;
 
     const start = (page - 1) * limit;
     const end = start + limit;
 
-    const paginatedQuestions = stableQuestions
-      .slice(0, totalQuestions)
-      .slice(start, end);
+    const paginatedQuestions = stableQuestions.slice(start, end);
 
     const totalPages = Math.ceil(totalQuestions / limit);
 
@@ -549,6 +559,19 @@ export async function submitQuizController(req: Request) {
       { upsert: true },
     );
 
+    // Update approval request status to COMPLETED
+    try {
+      const db = require("../db").db;
+      if (db) {
+        await db.collection("approval_requests").updateOne(
+          { quizId, participant1RollNo: participant1RollNo.trim() },
+          { $set: { status: "COMPLETED" } }
+        );
+      }
+    } catch (dbErr) {
+      console.error("Failed to update approval request status:", dbErr);
+    }
+
     console.debug(
       "Quiz submitted successfully for user:",
       userId,
@@ -662,6 +685,15 @@ export async function deleteQuizController(req: Request) {
     await usersCollection().deleteMany({ quizId });
     await quizSessionCollection().deleteMany({ quizId });
     await quizSubmission().deleteMany({ quizId });
+
+    try {
+      const db = require("../db").db;
+      if (db) {
+        await db.collection("approval_requests").deleteMany({ quizId });
+      }
+    } catch (e) {
+      console.error("Failed to delete approval requests:", e);
+    }
 
     return new Response(
       JSON.stringify({
@@ -993,7 +1025,6 @@ export async function createQuiz(req: Request) {
     const formData = await req.formData();
 
     const csvFile = formData.get("csv") as File | null;
-    const zipFile = formData.get("images") as File | null;
 
     const name = formData.get("name")?.toString().trim();
     const duration = Number(formData.get("duration"));
@@ -1006,10 +1037,6 @@ export async function createQuiz(req: Request) {
 
     if (![1, 2].includes(teamSize)) {
       return jsonError("Team size must be 1 or 2", 400);
-    }
-
-    if (zipFile && zipFile.type !== "application/zip") {
-      return jsonError("Images must be a ZIP file", 400);
     }
 
     /* ---------------- Duplicate Quiz Name Check ---------------- */
@@ -1047,17 +1074,13 @@ export async function createQuiz(req: Request) {
     const REQUIRED_HEADERS = [
       "sno",
       "question",
-      "question-image",
       "option1",
-      "option1-image",
       "option2",
-      "option2-image",
       "option3",
-      "option3-image",
       "option4",
-      "option4-image",
       "multiple",
       "correct-options",
+      "images",
     ];
 
     for (const h of REQUIRED_HEADERS) {
@@ -1066,95 +1089,42 @@ export async function createQuiz(req: Request) {
       }
     }
 
-    /* ---------------- Collect Image References ---------------- */
-
-    const imageNames = new Set<string>();
-
-    rows.forEach((row) => {
-      if (row["question-image"]) imageNames.add(row["question-image"]);
-      [1, 2, 3, 4].forEach((n) => {
-        if (row[`option${n}-image`]) {
-          imageNames.add(row[`option${n}-image`]);
-        }
-      });
-    });
-
-    /* ---------------- ZIP Extraction ---------------- */
-
-    let imageBasePath: string | null = null;
-
-    if (zipFile) {
-      const quizFolder = safeFolderName(name);
-      imageBasePath = `/uploads/${quizFolder}`;
-
-      outputDir = path.join(process.cwd(), "public", "uploads", quizFolder);
-
-      if (fs.existsSync(outputDir)) {
-        return jsonError(`Image folder for quiz "${name}" already exists`, 409);
-      }
-
-      fs.mkdirSync(outputDir, { recursive: true });
-
-      try {
-        const zipBuffer = Buffer.from(await zipFile.arrayBuffer());
-        const zip = new AdmZip(zipBuffer);
-
-        const zipFileNames = new Set<string>();
-
-        zip.getEntries().forEach((entry) => {
-          if (entry.isDirectory) return;
-
-          const fileName = path.basename(entry.entryName);
-          zipFileNames.add(fileName);
-
-          fs.writeFileSync(path.join(outputDir!, fileName), entry.getData());
-        });
-
-        for (const img of imageNames) {
-          if (!zipFileNames.has(img)) {
-            throw new Error(
-              `Image "${img}" referenced in CSV but not found in images.zip`,
-            );
-          }
-        }
-      } catch (err) {
-        if (outputDir && fs.existsSync(outputDir)) {
-          fs.rmSync(outputDir, { recursive: true, force: true });
-        }
-        throw err;
-      }
-    }
-
     /* ---------------- Build Questions ---------------- */
 
     const questions = rows.map((row, i) => {
       const rowNo = i + 2;
 
-      const questionText = row["question"]?.trim();
-      const questionImage = row["question-image"]?.trim();
+      let questionText = row["question"]?.trim();
 
-      if (!questionText && !questionImage) {
+      if (!questionText) {
         throw new Error(
-          `Row ${rowNo}: question text or question-image required`,
+          `Row ${rowNo}: question text required`,
         );
       }
+
+      const content = (row["codeContent"] || "").trim();
+      if (content) {
+        const lang = (row["codeLang"] || "plaintext").trim();
+        questionText += `\n\`\`\`${lang}\n${content}\n\`\`\``;
+      }
+
+      const hasImages = String(row["images"]).trim() === "1" || String(row["images"]).trim().toLowerCase() === "true";
 
       const options = [1, 2, 3, 4]
         .map((n) => {
           const text = row[`option${n}`]?.trim();
-          const image = row[`option${n}-image`]?.trim();
 
-          if (!text && !image) return null;
+          if (!text && !hasImages) return null;
 
           return {
             text: text || null,
-            image: image ? `${imageBasePath}/${image}` : null,
+            image: null,
           };
         })
         .filter(Boolean);
 
       if (options.length < 2) {
-        throw new Error(`Row ${rowNo}: at least two options required`);
+        throw new Error(`Row ${rowNo}: at least two options required (empty options only allowed if images=1)`);
       }
 
       const multiple = String(row["multiple"]).toLowerCase() === "true";
@@ -1172,12 +1142,11 @@ export async function createQuiz(req: Request) {
       return {
         sno: row["sno"],
         question: questionText || null,
-        questionImage: questionImage
-          ? `${imageBasePath}/${questionImage}`
-          : null,
+        questionImage: null,
         options,
         correct_options: correct,
         multiple,
+        needsImage: hasImages,
       };
     });
 
@@ -1250,6 +1219,7 @@ export async function updateQuizQuestion(req: Request) {
       question,
       questionImage = null,
       options,
+      correct_options,
       multiple,
     } = body;
 
@@ -1272,13 +1242,14 @@ export async function updateQuizQuestion(req: Request) {
     const updateResult = await quizzesCollection().findOneAndUpdate(
       {
         _id: quizObjectId,
-        "questions.sno": sno,
+        "questions.sno": String(sno),
       },
       {
         $set: {
           "questions.$.question": question,
           "questions.$.questionImage": questionImage,
           "questions.$.options": options,
+          "questions.$.correct_options": correct_options || [],
           "questions.$.multiple": Boolean(multiple),
           "questions.$.updatedAt": new Date(),
         },
@@ -1286,12 +1257,14 @@ export async function updateQuizQuestion(req: Request) {
       {
         returnDocument: "after",
         projection: {
-          questions: { $elemMatch: { sno } },
+          questions: { $elemMatch: { sno: String(sno) } },
         },
       },
     );
 
-    if (!updateResult.value) {
+    const updatedDocument = updateResult?.value || updateResult;
+    
+    if (!updatedDocument) {
       return new Response(JSON.stringify({ message: "Question not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
@@ -1301,7 +1274,7 @@ export async function updateQuizQuestion(req: Request) {
     return new Response(
       JSON.stringify({
         message: "Question updated successfully",
-        question: updateResult.value.questions[0],
+        question: updatedDocument.questions[0],
       }),
       {
         status: 200,
@@ -1314,5 +1287,55 @@ export async function updateQuizQuestion(req: Request) {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  }
+}
+
+export async function uploadImageController(req: Request) {
+  const { unauthorizedResponse } = await authMiddleware(req);
+  if (unauthorizedResponse) return unauthorizedResponse;
+
+  try {
+    const formData = await req.formData();
+    const imageFile = formData.get("image") as File | null;
+    const quizId = formData.get("quizId")?.toString().trim();
+
+    if (!imageFile || !quizId) {
+      return jsonError("Missing image or quizId", 400);
+    }
+
+    const quiz = await quizzesCollection().findOne({
+      _id: ObjectId.createFromHexString(quizId),
+    });
+
+    if (!quiz) {
+      return jsonError("Quiz not found", 404);
+    }
+
+    const quizFolder = safeFolderName(quiz.name);
+    const outputDir = path.join(process.cwd(), "public", "uploads", quizFolder);
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    const cleanName = imageFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    const fileName = `${Date.now()}-${cleanName}`;
+    const filePath = path.join(outputDir, fileName);
+
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
+
+    const imageUrl = `/uploads/${quizFolder}/${fileName}`;
+
+    return new Response(
+      JSON.stringify({ success: true, imageUrl }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (err: any) {
+    console.error("Upload image error:", err);
+    return jsonError(err.message || "Server error", 500);
   }
 }

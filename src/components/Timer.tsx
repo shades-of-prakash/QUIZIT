@@ -6,9 +6,10 @@ type TimerProps = {
   quizId: string;
   onTimeUp: () => void;
   onWarn?: () => void;
+  isPaused?: boolean;
 };
 
-const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
+const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn, isPaused = false }) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timeLeftRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -52,7 +53,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
 
   // ✅ Fixed countdown - using refs to avoid recreating interval
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (timeLeft === null || isPaused) return;
 
     // Clear any existing interval
     if (intervalRef.current) {
@@ -86,11 +87,11 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
         intervalRef.current = null;
       }
     };
-  }, [timeLeft === null]); // Removed callback dependencies
+  }, [timeLeft === null, isPaused]); // Added isPaused to dependencies
 
   // ✅ Fixed heartbeat - stable interval
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (timeLeft === null || isPaused) return;
 
     const sendHeartbeat = async (remaining: number) => {
       try {
@@ -127,7 +128,7 @@ const Timer: React.FC<TimerProps> = ({ userId, quizId, onTimeUp, onWarn }) => {
         heartbeatRef.current = null;
       }
     };
-  }, [userId, quizId, timeLeft === null]); // Stable dependencies
+  }, [userId, quizId, timeLeft === null, isPaused]); // Stable dependencies
 
   if (timeLeft === null) return <div>Loading timer...</div>;
 

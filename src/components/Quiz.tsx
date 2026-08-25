@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Slider from "./Slider";
 import Timer from "./Timer";
 import { useUserAuth } from "../context/userAuthContext";
-import { useNavigate } from "react-router";
+import { useNavigate, useOutletContext } from "react-router";
 import { toast } from "sonner";
 import WarningModal from "./WarningModal";
 import SubmitConfirmModal from "./SubmitConfirmModal";
@@ -28,6 +28,8 @@ type Question = {
 const Quiz: React.FC = () => {
   const { user } = useUserAuth();
   const navigate = useNavigate();
+  const context = useOutletContext<{ isPaused?: boolean }>() || {};
+  const isPaused = context.isPaused ?? false;
 
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -212,7 +214,8 @@ const Quiz: React.FC = () => {
       if (
         (document.hidden || !document.fullscreenElement) &&
         sessionLoaded &&
-        !submitted
+        !submitted &&
+        !isPaused
       ) {
         incrementTabSwitchCount();
       }
@@ -225,7 +228,7 @@ const Quiz: React.FC = () => {
       document.removeEventListener("visibilitychange", handleExit);
       document.removeEventListener("fullscreenchange", handleExit);
     };
-  }, [sessionLoaded, submitted, incrementTabSwitchCount]);
+  }, [sessionLoaded, submitted, incrementTabSwitchCount, isPaused]);
 
   const handleOptionChange = useCallback(
     (optionIndex: number) => {
@@ -325,9 +328,9 @@ const Quiz: React.FC = () => {
           setTimeout(() => handleSubmit(), 0);
         }}
       />
-      <div className="w-screen  h-screen flex flex-col">
+      <div className="w-screen h-screen flex flex-col overflow-auto">
         {/* HEADER */}
-        <div className="w-full h-20 flex justify-between items-center px-4">
+        <div className="w-full h-20 flex justify-between items-center px-4 min-w-[800px]">
           <div className="flex gap-2 items-center">
             <h1 className="text-2xl font-bold">
               QUIZ<span className="text-accent">IT</span>
@@ -351,37 +354,21 @@ const Quiz: React.FC = () => {
               quizId={user?.quizId ?? ""}
               onTimeUp={handleTimeUp}
               onWarn={handleTimerWarning}
+              isPaused={isPaused}
             />
-            <button
-              onClick={() => setShowSubmitConfirm(true)}
-              disabled={submitting || submitted}
-              className={`px-5 py-2 rounded-md text-white ${
-                submitted
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : submitting
-                    ? "bg-red-400 cursor-wait"
-                    : "bg-red-800 hover:bg-red-900"
-              }`}
-            >
-              {submitted
-                ? "Submitted"
-                : submitting
-                  ? "Submitting..."
-                  : "Submit"}
-            </button>
           </div>
         </div>
 
         {/* MAIN QUIZ */}
-        <div className="w-full h-[calc(100%-5rem)] flex flex-1">
+        <div className="w-full h-[calc(100%-5rem)] flex flex-1 pb-[70px] min-w-[800px] min-h-[500px]">
           <div className=" h-full flex w-full flex-1 border border-neutral-800/20 rounded-md overflow-auto">
             {/* QUESTION */}
-            <div className="w-1/2 h-full p-5 border-r  border-gray-300  flex flex-col gap-4 ">
+            <div className="w-1/2 h-full p-5 border-r border-gray-300 flex flex-col gap-4 overflow-auto custom-scrollbar">
               {/* bg-neutral-50 */}
-              <span className="font-semibold ">
+              <span className="font-semibold shrink-0">
                 Question {activeQuestion + 1}
               </span>
-              <div className="flex flex-col gap-4 flex-1 overflow-auto">
+              <div className="flex flex-col gap-4">
                 {/* Question text / code */}
                 {questions[activeQuestion]?.question && (
                   <CodeBlock
@@ -395,24 +382,8 @@ const Quiz: React.FC = () => {
             </div>
 
             <div className="w-1/2 h-full flex flex-col">
-              <div className="w-full flex h-[60px] justify-between items-center gap-3 px-4 py-2 sticky bottom-0">
-                <span>Answer</span>
-                <div className="flex gap-2">
-                  <button
-                    disabled={activeQuestion === 0}
-                    onClick={handlePrevious}
-                    className="bg-black text-white h-8 px-3 text-sm flex gap-2 items-center rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  >
-                    <ArrowLeftToLine size={14} /> Previous
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    disabled={activeQuestion === questions.length - 1}
-                    className="bg-black  text-white h-8 px-3 rounded-md text-sm  flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  >
-                    Next <ArrowRightToLine size={14} />
-                  </button>
-                </div>
+              <div className="w-full flex h-[50px] justify-between items-center gap-3 px-5 py-2 border-b border-gray-200 bg-neutral-50/50">
+                <span className="font-medium text-gray-700">Answer Options</span>
               </div>
               {/* OPTIONS */}
               <div className="w-full h-[calc(100%-60px)] flex flex-col px-5 py-4 gap-3">
@@ -472,6 +443,53 @@ const Quiz: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* FIXED FOOTER */}
+      <div className="fixed bottom-0 left-0 w-full h-[70px] bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] flex items-center justify-between px-6 z-40">
+        <div className="flex items-center text-sm font-semibold text-gray-500">
+          Question {activeQuestion + 1} of {questions.length}
+        </div>
+        
+        <div className="absolute left-1/2 -translate-x-1/2 text-xs font-medium text-gray-400 hidden md:block select-none pointer-events-none">
+          @shadesofprakash a student from IT-A 2022-2026
+        </div>
+        <div className="flex gap-3">
+          <button
+            disabled={activeQuestion === 0}
+            onClick={handlePrevious}
+            className="bg-gray-100 hover:bg-gray-200 text-black h-10 px-5 text-sm font-medium flex gap-2 items-center rounded-md disabled:opacity-40 disabled:cursor-not-allowed transition-all border border-gray-300"
+          >
+            <ArrowLeftToLine size={16} /> Previous
+          </button>
+          
+          {activeQuestion === questions.length - 1 ? (
+            <button
+              onClick={() => setShowSubmitConfirm(true)}
+              disabled={submitting || submitted}
+              className={`h-10 px-6 rounded-md font-bold text-white text-sm flex items-center transition-colors ${
+                submitted
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : submitting
+                    ? "bg-red-400 cursor-wait"
+                    : "bg-red-600 hover:bg-red-700"
+              }`}
+            >
+              {submitted
+                ? "Submitted"
+                : submitting
+                  ? "Submitting..."
+                  : "Submit Exam"}
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              className="bg-black hover:bg-gray-800 text-white h-10 px-6 rounded-md text-sm font-medium flex items-center gap-2 transition-all"
+            >
+              Next <ArrowRightToLine size={16} />
+            </button>
+          )}
         </div>
       </div>
     </>

@@ -2,9 +2,8 @@ import React, { useState, lazy, Suspense, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import Box from "../assets/box.webp";
-import { Trash, UserPlus } from "lucide-react";
+import { Trash } from "lucide-react";
 import CreateQuizModal from "./CreatequizModal";
-import CreateUsers from "./CreateUsers";
 
 interface Quiz {
   id: string;
@@ -37,7 +36,6 @@ const deleteQuiz = async (id: string) => {
 
 export default function Createquiz() {
   const [showModal, setShowModal] = useState(false);
-  const [usersPopUp, setUsersPopUp] = useState(false);
   const [deletePopup, setDeletePopup] = useState<{
     show: boolean;
     quizId: string;
@@ -47,7 +45,6 @@ export default function Createquiz() {
     quizId: "",
     quizName: "",
   });
-  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const navigate = useNavigate();
 
   const {
@@ -111,7 +108,6 @@ export default function Createquiz() {
             onDelete={(e, id, name) =>
               setDeletePopup({ show: true, quizId: id, quizName: name })
             }
-            onUsers={(quiz) => setSelectedQuiz(quiz)}
           />
         )}
       </main>
@@ -138,27 +134,7 @@ export default function Createquiz() {
         />
       )}
 
-      {selectedQuiz && (
-        <CreateUsers
-          quizId={selectedQuiz.id}
-          quizName={selectedQuiz.name}
-          onClose={() => setSelectedQuiz(null)}
-        />
-      )}
 
-      {usersPopUp && (
-        <div className="fixed inset-0 z-10 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="w-[800px] h-[400px] bg-white p-4 relative">
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-black"
-              onClick={() => setUsersPopUp(false)}
-            >
-              ✕
-            </button>
-            {/* Users creation content */}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -181,11 +157,10 @@ interface QuizTableProps {
   quizzes: Quiz[];
   onNavigate: (id: string) => void;
   onDelete: (e: React.MouseEvent, id: string, name: string) => void;
-  onUsers: (quiz: Quiz) => void;
 }
 
 const QuizTable = React.memo(
-  ({ quizzes, onNavigate, onDelete, onUsers }: QuizTableProps) => (
+  ({ quizzes, onNavigate, onDelete }: QuizTableProps) => (
     <div className="overflow-hidden rounded-md border border-gray-300 shadow-sm">
       <table className="w-full text-sm">
         <thead className="bg-black/90 text-gray-300">
@@ -211,16 +186,6 @@ const QuizTable = React.memo(
               <td className="px-4 py-2 text-center">{quiz.quizQuestions}</td>
               <td className="px-4 py-2 text-center">{quiz.duration}</td>
               <td className="px-4 py-2 flex gap-2 justify-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUsers(quiz);
-                  }}
-                  className="flex gap-1 items-center border border-green-600 text-green-700 hover:bg-green-50 rounded-md px-3 py-1 transition"
-                >
-                  <UserPlus size={16} />
-                  Create Users
-                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

@@ -21,7 +21,7 @@ const AdminLogin = () => {
 		e.preventDefault();
 		try {
 			await login({ username, password });
-		} catch {}
+		} catch { }
 	};
 
 	return (
@@ -47,12 +47,12 @@ const AdminLogin = () => {
 			</div>
 
 			{/* login card */}
-			<div className="z-10 border border-neutral-800/20 w-[450px] h-auto py-10 bg-[#f8f8ff] rounded-xl flex flex-col items-center justify-center">
-				<h1 className="font-bold text-3xl">
+			<div className="z-10 w-[400px] h-auto py-8 bg-[#f8f8ff] rounded-xl flex flex-col items-center justify-center">
+				<h1 className="font-bold text-2xl">
 					QUIZ<span className="text-accent">IT</span>
 				</h1>
-				<div className="w-full px-10 text-center mt-4">
-					<p className="text-neutral-700 text-sm">
+				<div className="w-full px-10 text-center mt-3">
+					<p className="text-neutral-700 text-xs">
 						Enter your credentials to securely access the control panel and
 						manage your system.
 					</p>
@@ -60,17 +60,17 @@ const AdminLogin = () => {
 
 				<form
 					onSubmit={handleSubmit}
-					className="w-full flex flex-col px-10 gap-4 mt-6"
+					className="w-full flex flex-col px-8 gap-3 mt-5"
 				>
 					{/* username */}
 					<div className="flex flex-col gap-1">
-						<label htmlFor="username" className="text-neutral-500">
+						<label htmlFor="username" className="text-neutral-500 text-sm">
 							Username
 						</label>
 						<input
 							type="text"
 							id="username"
-							className="px-4 py-3 border border-neutral-800/40 bg-transparent rounded-md"
+							className="px-3 py-2 border border-neutral-800/40 bg-transparent rounded-md text-sm"
 							value={username}
 							onChange={(e) => setUsername(e.target.value)}
 							required
@@ -81,14 +81,14 @@ const AdminLogin = () => {
 
 					{/* password with toggle */}
 					<div className="flex flex-col gap-1">
-						<label htmlFor="password" className="text-neutral-500">
+						<label htmlFor="password" className="text-neutral-500 text-sm">
 							Password
 						</label>
 						<div className="relative">
 							<input
 								type={showPassword ? "text" : "password"}
 								id="password"
-								className="w-full px-4 py-3 border border-neutral-800/40 bg-transparent rounded-md pr-10"
+								className="w-full px-3 py-2 border border-neutral-800/40 bg-transparent rounded-md pr-10 text-sm"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required
@@ -102,19 +102,19 @@ const AdminLogin = () => {
 								tabIndex={-1}
 							>
 								{showPassword ? (
-									<EyeOff className="w-5 h-5" />
+									<EyeOff className="w-4 h-4" />
 								) : (
-									<Eye className="w-5 h-5" />
+									<Eye className="w-4 h-4" />
 								)}
 							</button>
 						</div>
 					</div>
 
 					{/* login button */}
-					<div className="flex w-full mt-4">
+					<div className="flex w-full mt-3">
 						<button
 							type="submit"
-							className="w-full px-4 py-3 bg-black hover:bg-black/90 text-white rounded-md font-bold"
+							className="w-full px-4 py-2 bg-black hover:bg-black/90 text-white rounded-md font-bold text-sm"
 							disabled={loginMutationIsLoading}
 						>
 							{loginMutationIsLoading ? "Logging in..." : "Login"}

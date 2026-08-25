@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { X, Upload, FileArchive, Image } from "lucide-react";
+import { X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import CustomSelect from "./CustomSelect";
 
@@ -13,9 +13,6 @@ export default function CreateQuizModal({
   refreshQuizzes,
 }: CreateQuizModalProps) {
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [zipFile, setZipFile] = useState<File | null>(null);
-
-  const [hasImages, setHasImages] = useState(false);
 
   const [quizName, setQuizName] = useState("");
   const [questions, setQuestions] = useState("");
@@ -56,19 +53,6 @@ export default function CreateQuizModal({
     }
   };
 
-  const handleZipChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".zip")) {
-      toast.error("Only .zip files are allowed");
-      e.target.value = "";
-      return;
-    }
-
-    setZipFile(file);
-  };
-
   /* ---------- SUBMIT ---------- */
 
   const isFormValid =
@@ -76,8 +60,7 @@ export default function CreateQuizModal({
     quizName.trim() &&
     questions.trim() &&
     duration.trim() &&
-    teamSize.trim() &&
-    (!hasImages || zipFile);
+    teamSize.trim();
 
   const handleCreateQuiz = async () => {
     if (!isFormValid) return;
@@ -88,10 +71,6 @@ export default function CreateQuizModal({
       const formData = new FormData();
 
       formData.append("csv", csvFile!);
-      if (hasImages && zipFile) {
-        formData.append("images", zipFile);
-      }
-
       formData.append("name", quizName);
       formData.append("duration", duration);
       formData.append("quizQuestions", questions);
@@ -130,36 +109,6 @@ export default function CreateQuizModal({
           </button>
         </div>
 
-        {/* Images Toggle */}
-        <div className="flex items-center justify-between border rounded-md px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Image size={18} />
-            <div>
-              <p className="text-sm font-medium">Includes images</p>
-              <p className="text-xs text-neutral-500">
-                Questions or options have images
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setHasImages((v) => !v);
-              setZipFile(null);
-            }}
-            className={`w-11 h-6 rounded-full transition relative ${
-              hasImages ? "bg-black" : "bg-neutral-300"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
-                hasImages ? "right-0.5" : "left-0.5"
-              }`}
-            />
-          </button>
-        </div>
-
         {/* FILE INPUTS */}
         <div className="flex items-center gap-3">
           <FileBox
@@ -171,16 +120,6 @@ export default function CreateQuizModal({
             onChange={handleCsvChange}
           />
 
-          {hasImages && (
-            <FileBox
-              icon={<FileArchive />}
-              title="Upload images.zip"
-              subtitle="Required when images enabled"
-              file={zipFile}
-              accept=".zip"
-              onChange={handleZipChange}
-            />
-          )}
         </div>
 
         {/* FORM FIELDS */}

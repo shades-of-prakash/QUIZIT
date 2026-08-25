@@ -6,8 +6,10 @@ services:
       target: backend
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb://host.docker.internal:27017/QUIZIT
+      - MONGODB_URI=mongodb://mongodb:27017/QUIZIT
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret}
+    depends_on:
+      - mongodb
     expose:
       - "4000"
     volumes:
@@ -30,6 +32,18 @@ services:
     networks:
       - app-network
 
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  mongodb_data:

@@ -40,7 +40,7 @@ function CustomSelect({
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className={`w-full border border-neutral-800/30  ${stylePropsOfSelect||"px-4 py-2"} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors`}
+				className={`w-full border border-neutral-800/30  ${stylePropsOfSelect||"px-4 py-2"} rounded-md focus:outline-none focus:ring-2 focus:ring-black flex items-center justify-between bg-white hover:bg-neutral-50 transition-colors`}
 			>
 				<span className={selectedOption ? "text-black" : "text-neutral-500"}>
 					{selectedOption ? selectedOption.label : placeholder}
@@ -53,7 +53,7 @@ function CustomSelect({
 			</button>
 
 			{isOpen && (
-				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+				<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-neutral-300 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-neutral-400">
 					{options.map((option) => (
 						<button
 							key={option.value}
@@ -62,10 +62,10 @@ function CustomSelect({
 								onChange(option.value);
 								setIsOpen(false);
 							}}
-							className={`w-full px-4 py-2 ${stylePropsOfSelect} text-left hover:bg-neutral-100 transition-colors first:rounded-t-md last:rounded-b-md ${
+							className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors first:rounded-t-md last:rounded-b-md ${
 								value === option.value
-									? "bg-blue-50 text-blue-700"
-									: "text-black"
+									? "bg-black text-white hover:bg-neutral-800"
+									: "text-black hover:bg-neutral-100"
 							}`}
 						>
 							{option.label}

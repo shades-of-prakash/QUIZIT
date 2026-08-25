@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 type CodeBlockProps = {
   raw: string;
   image: string | null;
+  onImageClick?: (url: string) => void;
 };
 
 export function parseCodeBlock(block: string) {
@@ -32,7 +33,7 @@ export function parseCodeBlock(block: string) {
   };
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image, onImageClick }) => {
   const [html, setHtml] = useState<string>("");
   const { lang, code, question } = parseCodeBlock(raw);
 
@@ -57,12 +58,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
   }, [raw, code, lang, question]);
 
   return (
-    <div className="w-full h-full rounded-md overflow-hidden flex flex-col gap-2">
+    <div className="w-full h-fit flex-shrink-0 rounded-md overflow-hidden flex flex-col gap-2">
       {question && (
         <div className="w-full py-1 text-lg font-geist">{question}</div>
       )}
       {image && (
-        <img src={image} alt="Question" className="w-[300px]" loading="lazy" />
+        <img 
+          src={image} 
+          alt="Question" 
+          className="w-[300px] cursor-pointer" 
+          loading="lazy" 
+          onClick={() => onImageClick?.(image)}
+        />
       )}
       {code && (
         <div className="w-full flex flex-col rounded-md overflow-hidden border border-gray-300">
@@ -70,7 +77,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image }) => {
             <span className="text-base px-2">{lang}</span>
           </div>
           <div
-            className="custom-scrollbar max-w-fit h-fit max-h-[480px] overflow-auto rounded-e-md text-lg px-2 font-mono"
+            className="custom-scrollbar w-full h-fit max-h-[600px] overflow-auto rounded-e-md text-lg px-2 font-mono"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
