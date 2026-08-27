@@ -112,7 +112,94 @@ const AdminLiveDashboard = () => {
 		}
 	};
 
-	const displayRequests = requests.filter(r => r.status !== "REJECTED" && r.status !== "COMPLETED"); // Hide rejected and completed from the main table, keep pending/approved/paused
+	const displayRequests = requests
+		.filter(r => r.status !== "REJECTED" && r.status !== "COMPLETED") // Hide rejected and completed from the main table, keep pending/approved/paused
+		.sort((a, b) => {
+			// Put PENDING at the top
+			if (a.status === "PENDING" && b.status !== "PENDING") return -1;
+			if (a.status !== "PENDING" && b.status === "PENDING") return 1;
+			
+			// If both have the same status, sort by requestedAt (newest first)
+			if (a.requestedAt && b.requestedAt) {
+				return new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime();
+			}
+			return 0;
+		});
+
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+	const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+
+	const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.checked) {
+			setSelectedIds(new Set(displayRequests.map(r => r._id)));
+		} else {
+			setSelectedIds(new Set());
+		}
+	};
+
+	const handleSelectRow = (id: string) => {
+		const newSet = new Set(selectedIds);
+		if (newSet.has(id)) {
+			newSet.delete(id);
+		} else {
+			newSet.add(id);
+		}
+		setSelectedIds(newSet);
+	};
+
+	const handleBatchApprove = async () => {
+		const pendingSelected = displayRequests.filter(r => selectedIds.has(r._id) && r.status === "PENDING");
+		if (pendingSelected.length === 0) {
+			toast.info("No pending requests selected to approve.");
+			return;
+		}
+		
+		setIsProcessingBatch(true);
+		let successCount = 0;
+		for (const req of pendingSelected) {
+			try {
+				const res = await fetch("/api/approval/approve", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ _id: req._id, quizId: req.quizId, participant1RollNo: req.participant1RollNo }),
+				});
+				if (res.ok) successCount++;
+			} catch (err) {
+				console.error(err);
+			}
+		}
+		toast.success(`Approved ${successCount} requests`);
+		setSelectedIds(new Set());
+		fetchRequests();
+		setIsProcessingBatch(false);
+	};
+
+	const handleBatchDecline = async () => {
+		const pendingSelected = displayRequests.filter(r => selectedIds.has(r._id) && r.status === "PENDING");
+		if (pendingSelected.length === 0) {
+			toast.info("No pending requests selected to decline.");
+			return;
+		}
+		
+		setIsProcessingBatch(true);
+		let successCount = 0;
+		for (const req of pendingSelected) {
+			try {
+				const res = await fetch("/api/approval/update", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ _id: req._id, status: "REJECTED" }),
+				});
+				if (res.ok) successCount++;
+			} catch (err) {
+				console.error(err);
+			}
+		}
+		toast.success(`Declined ${successCount} requests`);
+		setSelectedIds(new Set());
+		fetchRequests();
+		setIsProcessingBatch(false);
+	};
 
 	return (
 		<div className="w-full h-full flex flex-col bg-zinc-50 font-sans text-zinc-950">
@@ -137,7 +224,7 @@ const AdminLiveDashboard = () => {
 			</header>
 
 			{/* Main content */}
-			<main className="flex-1 bg-zinc-100/50 p-2 md:p-2 overflow-y-auto flex flex-col">
+			<main className="flex-1 bg-zinc-100/50 p-2 md:p-4 overflow-hidden flex flex-col">
 				{loading && displayRequests.length === 0 ? (
 					<div className="w-full h-full flex flex-col items-center justify-center py-20">
 						<Loader2 className="w-8 h-8 animate-spin text-zinc-400 mb-4" />
@@ -154,11 +241,33 @@ const AdminLiveDashboard = () => {
 						</p>
 					</div>
 				) : (
-					<div className="overflow-hidden rounded-md border border-zinc-200 shadow-sm bg-white">
-						<table className="w-full text-sm">
-							<thead className="bg-black/90 text-gray-300">
-								<tr>
-									<th className="px-4 py-2 text-left">#</th>
+					<div className="flex-1 flex flex-col min-h-0">
+						{selectedIds.size > 0 && (
+							<div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 flex items-center justify-between shrink-0">
+								<span className="text-sm text-blue-800 font-medium">{selectedIds.size} request(s) selected</span>
+								<div className="flex gap-2">
+									<button onClick={handleBatchApprove} disabled={isProcessingBatch} className="bg-black text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-opacity">
+										{isProcessingBatch ? "Processing..." : "Approve Selected"}
+									</button>
+									<button onClick={handleBatchDecline} disabled={isProcessingBatch} className="border border-red-300 text-red-600 bg-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-red-50 disabled:opacity-50 transition-opacity">
+										Decline Selected
+									</button>
+								</div>
+							</div>
+						)}
+						<div className="overflow-y-auto flex-1 rounded-md border border-zinc-200 shadow-sm bg-white">
+							<table className="w-full text-sm">
+								<thead className="bg-black/90 text-gray-300 sticky top-0 z-10">
+									<tr>
+										<th className="px-4 py-2 w-12 text-center">
+											<input 
+												type="checkbox" 
+												onChange={handleSelectAll} 
+												checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length} 
+												className="w-4 h-4 accent-black rounded cursor-pointer" 
+											/>
+										</th>
+										<th className="px-4 py-2 text-left">#</th>
 									<th className="px-4 py-2 text-left">Student Name</th>
 									<th className="px-4 py-2 text-left">Roll No</th>
 									<th className="px-4 py-2 text-left">College</th>
@@ -172,6 +281,14 @@ const AdminLiveDashboard = () => {
 										key={req._id}
 										className="border-t border-gray-200 hover:bg-gray-50 transition"
 									>
+										<td className="px-4 py-2 text-center">
+											<input 
+												type="checkbox" 
+												checked={selectedIds.has(req._id)} 
+												onChange={() => handleSelectRow(req._id)} 
+												className="w-4 h-4 accent-black rounded cursor-pointer" 
+											/>
+										</td>
 										<td className="px-4 py-2">{index + 1}</td>
 										<td className="px-4 py-2 font-medium">{req.participant1Name}</td>
 										<td className="px-4 py-2 font-mono text-gray-600">{req.participant1RollNo}</td>
@@ -245,6 +362,7 @@ const AdminLiveDashboard = () => {
 								))}
 							</tbody>
 						</table>
+						</div>
 					</div>
 				)}
 			</main>

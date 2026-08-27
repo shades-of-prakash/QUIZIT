@@ -410,13 +410,12 @@ const Quiz: React.FC = () => {
                           name={
                             !isMultiple ? `quiz-${activeQuestion}` : undefined
                           }
-                          className="mt-1 w-5 h-5 accent-black"
+                          className="mt-1 w-5 h-5 accent-black pointer-events-none"
                           checked={isChecked}
-                          onChange={() => handleOptionChange(i)}
+                          readOnly
                         />
 
-                        <label
-                          htmlFor={id}
+                        <div
                           className="flex flex-col gap-2 cursor-pointer"
                         >
                           {/* Option text */}
@@ -435,7 +434,7 @@ const Quiz: React.FC = () => {
                               loading="lazy"
                             />
                           )}
-                        </label>
+                        </div>
                       </div>
                     );
                   })}
