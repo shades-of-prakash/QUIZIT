@@ -66,7 +66,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ raw, image, onImageClick }) => {
         <img 
           src={image} 
           alt="Question" 
-          className="w-[300px] cursor-pointer" 
+          className="w-full max-w-2xl max-h-[500px] object-contain cursor-pointer rounded-md" 
           loading="lazy" 
           onClick={() => onImageClick?.(image)}
         />

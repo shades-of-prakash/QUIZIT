@@ -88,6 +88,8 @@ function Results() {
     isError: resultsError,
     error: resultsErrorObj,
     isFetched: resultsFetched,
+    refetch: refetchResults,
+    isFetching,
   } = useInfiniteQuery<{ results: Result[]; nextPage?: number }, Error>({
     queryKey: ["results", debouncedSelectedQuiz],
     queryFn: ({ pageParam = 1 }) =>
@@ -322,11 +324,18 @@ function Results() {
         </div>
         <div className="flex gap-2 items-center w-1/3">
           <button
-            onClick={reloadQuizzes}
-            className="p-3 rounded-md border border-gray-300 hover:bg-gray-100 transition"
-            title="Refresh quizzes"
+            onClick={() => {
+              if (selectedQuiz) {
+                refetchResults();
+              } else {
+                reloadQuizzes();
+              }
+            }}
+            className={`p-3 rounded-md border border-gray-300 hover:bg-gray-100 transition ${isFetching ? "opacity-70 cursor-wait" : ""}`}
+            title={selectedQuiz ? "Refresh results" : "Refresh quizzes"}
+            disabled={isFetching}
           >
-            <RefreshCcw size={16} className="text-gray-600" />
+            <RefreshCcw size={16} className={`text-gray-600 ${isFetching ? "animate-spin" : ""}`} />
           </button>
           {quizzesLoading ? (
             <div className="flex items-center justify-center flex-1">

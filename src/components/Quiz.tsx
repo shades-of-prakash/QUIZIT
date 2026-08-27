@@ -411,7 +411,7 @@ const Quiz: React.FC = () => {
                             <img
                               src={opt.image}
                               alt={`Option ${i + 1}`}
-                              className="max-w-[100px] max-h-[100px]  object-contain border rounded-md"
+                              className="w-full max-w-[400px] max-h-[300px] object-contain border rounded-md"
                               loading="lazy"
                             />
                           )}
