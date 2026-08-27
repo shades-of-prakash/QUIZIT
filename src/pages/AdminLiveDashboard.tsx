@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< Updated upstream
-import { Loader2, Pause, Play, XOctagon, Check, Inbox } from "lucide-react";
-=======
 import { Loader2, Pause, Play, XOctagon, Check, Inbox, AlertTriangle } from "lucide-react";
->>>>>>> Stashed changes
 import { toast } from "sonner";
 
 interface RequestItem {
@@ -125,9 +121,6 @@ const AdminLiveDashboard = () => {
 
 	const displayRequests = requests
 		.filter(r => r.status !== "REJECTED" && r.status !== "COMPLETED") // Hide rejected and completed from the main table, keep pending/approved/paused
-<<<<<<< Updated upstream
-		.sort((a, b) => {
-=======
 		.filter(r => {
 			if (activeTab === "requests") return r.status === "PENDING";
 			if (activeTab === "sessions") return r.status === "APPROVED" || r.status === "PAUSED";
@@ -142,7 +135,6 @@ const AdminLiveDashboard = () => {
 				}
 			}
 
->>>>>>> Stashed changes
 			// Put PENDING at the top
 			if (a.status === "PENDING" && b.status !== "PENDING") return -1;
 			if (a.status !== "PENDING" && b.status === "PENDING") return 1;
@@ -239,16 +231,6 @@ const AdminLiveDashboard = () => {
 						Manage exam logins and active sessions
 					</p>
 				</div>
-<<<<<<< Updated upstream
-				<div className="flex gap-4">
-					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium">
-						<span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-						Waiting Room: {requests.filter(r => r.status === "PENDING").length}
-					</div>
-					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium border-l border-zinc-300 pl-4">
-						<span className="w-2 h-2 rounded-full bg-green-500"></span>
-						Active Sessions: {requests.filter(r => r.status === "APPROVED" || r.status === "PAUSED").length}
-=======
 				<div className="flex gap-4 items-center">
 					<div className="flex gap-2 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
 						<button 
@@ -265,7 +247,6 @@ const AdminLiveDashboard = () => {
 							<span className="w-2 h-2 rounded-full bg-green-500"></span>
 							Active Sessions ({requests.filter(r => r.status === "APPROVED" || r.status === "PAUSED").length})
 						</button>
->>>>>>> Stashed changes
 					</div>
 					{requests.filter(r => (r.status === "APPROVED" || r.status === "PAUSED") && (r.tabSwitchCount || 0) > 3).length > 0 && (
 						<div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-md border border-red-200 text-sm font-bold shadow-sm animate-pulse" title="Students with more than 3 warnings">
@@ -295,11 +276,7 @@ const AdminLiveDashboard = () => {
 					</div>
 				) : (
 					<div className="flex-1 flex flex-col min-h-0">
-<<<<<<< Updated upstream
-						{selectedIds.size > 0 && (
-=======
 						{activeTab === "requests" && selectedIds.size > 0 && (
->>>>>>> Stashed changes
 							<div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 flex items-center justify-between shrink-0">
 								<span className="text-sm text-blue-800 font-medium">{selectedIds.size} request(s) selected</span>
 								<div className="flex gap-2">
@@ -316,23 +293,6 @@ const AdminLiveDashboard = () => {
 							<table className="w-full text-sm">
 								<thead className="bg-black/90 text-gray-300 sticky top-0 z-10">
 									<tr>
-<<<<<<< Updated upstream
-										<th className="px-4 py-2 w-12 text-center">
-											<input 
-												type="checkbox" 
-												onChange={handleSelectAll} 
-												checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length} 
-												className="w-4 h-4 accent-black rounded cursor-pointer" 
-											/>
-										</th>
-										<th className="px-4 py-2 text-left">#</th>
-									<th className="px-4 py-2 text-left">Student Name</th>
-									<th className="px-4 py-2 text-left">Roll No</th>
-									<th className="px-4 py-2 text-left">College</th>
-									<th className="px-4 py-2 text-center">Status</th>
-									<th className="px-4 py-2 text-center">Actions</th>
-								</tr>
-=======
 										{activeTab === "requests" && (
 											<th className="px-4 py-2 w-12 text-center">
 												<input 
@@ -366,7 +326,6 @@ const AdminLiveDashboard = () => {
 										</th>
 										<th className="px-4 py-2 text-center">Actions</th>
 									</tr>
->>>>>>> Stashed changes
 							</thead>
 							<tbody>
 								{displayRequests.map((req, index) => (
@@ -374,16 +333,6 @@ const AdminLiveDashboard = () => {
 										key={req._id}
 										className="border-t border-gray-200 hover:bg-gray-50 transition"
 									>
-<<<<<<< Updated upstream
-										<td className="px-4 py-2 text-center">
-											<input 
-												type="checkbox" 
-												checked={selectedIds.has(req._id)} 
-												onChange={() => handleSelectRow(req._id)} 
-												className="w-4 h-4 accent-black rounded cursor-pointer" 
-											/>
-										</td>
-=======
 										{activeTab === "requests" && (
 											<td className="px-4 py-2 text-center">
 												<input 
@@ -394,7 +343,6 @@ const AdminLiveDashboard = () => {
 												/>
 											</td>
 										)}
->>>>>>> Stashed changes
 										<td className="px-4 py-2">{index + 1}</td>
 										<td className="px-4 py-2 font-medium">{req.participant1Name}</td>
 										<td className="px-4 py-2 font-mono text-gray-600">{req.participant1RollNo}</td>
