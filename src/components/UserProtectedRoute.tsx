@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useUserAuth } from "../context/userAuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const UserProtectedRoute = () => {
 	const { user, isLoading } = useUserAuth();
@@ -9,7 +9,13 @@ const UserProtectedRoute = () => {
 	const [isChecking, setIsChecking] = useState(true);
 	const [completed, setCompleted] = useState(false);
 	const [isPaused, setIsPaused] = useState(false);
+	const [needsResumeClick, setNeedsResumeClick] = useState(false);
+	const isPausedRef = useRef(isPaused);
 	const { logout } = useUserAuth();
+
+	useEffect(() => {
+		isPausedRef.current = isPaused;
+	}, [isPaused]);
 
 	useEffect(() => {
 		const verifySession = async () => {
@@ -53,11 +59,19 @@ const UserProtectedRoute = () => {
 				
 				if (data.status === "PAUSED") {
 					setIsPaused(true);
+					setNeedsResumeClick(false);
 				} else if (data.status === "REVOKED" || data.status === "NOT_FOUND") {
 					await logout();
 					window.location.href = "/";
 				} else {
+					if (isPausedRef.current) {
+						setNeedsResumeClick(true);
+					}
 					setIsPaused(false);
+
+					if (window.location.pathname === "/quiz" && !document.fullscreenElement) {
+						setNeedsResumeClick(true);
+					}
 				}
 			} catch (err) {
 				console.error("Failed to check approval status");
@@ -94,7 +108,7 @@ const UserProtectedRoute = () => {
 
 	return (
 		<>
-			<Outlet context={{ isPaused }} />
+			<Outlet context={{ isPaused: isPaused || needsResumeClick }} />
 			{isPaused && (
 				<div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center">
 					<svg className="w-16 h-16 text-red-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,6 +116,24 @@ const UserProtectedRoute = () => {
 					</svg>
 					<h1 className="text-3xl font-bold text-gray-900 mb-2">Session Paused</h1>
 					<p className="text-gray-600 text-lg text-center max-w-md">Your exam has been paused by the Invigilator. Please wait for them to resume your session.</p>
+				</div>
+			)}
+			{needsResumeClick && !isPaused && (
+				<div className="fixed inset-0 z-[9999] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center">
+					<svg className="w-16 h-16 text-green-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					<h1 className="text-3xl font-bold text-gray-900 mb-2">Session Resumed</h1>
+					<p className="text-gray-600 text-lg text-center max-w-md mb-6">The Invigilator has resumed your exam. Click below to return to fullscreen and continue.</p>
+					<button 
+						onClick={() => {
+							document.documentElement.requestFullscreen().catch(() => {});
+							setNeedsResumeClick(false);
+						}}
+						className="px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition shadow-lg"
+					>
+						Return to Exam
+					</button>
 				</div>
 			)}
 		</>

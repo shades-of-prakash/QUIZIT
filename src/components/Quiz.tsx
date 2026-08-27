@@ -4,7 +4,6 @@ import Timer from "./Timer";
 import { useUserAuth } from "../context/userAuthContext";
 import { useNavigate, useOutletContext } from "react-router";
 import { toast } from "sonner";
-import WarningModal from "./WarningModal";
 import SubmitConfirmModal from "./SubmitConfirmModal";
 import CodeBlock from "./CodeBlock";
 import Loader from "./Loader";
@@ -42,9 +41,6 @@ const Quiz: React.FC = () => {
     new Set(),
   );
 
-  const [tabSwitchCount, setTabSwitchCount] = useState(-1);
-  const [showWarning, setShowWarning] = useState(false);
-  const [warningMessage, setWarningMessage] = useState("");
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   const incrementLock = useRef(false);
@@ -190,17 +186,6 @@ const Quiz: React.FC = () => {
 
       const data = await res.json();
       console.log("count", data.tabSwitchCount);
-      setTabSwitchCount(data.tabSwitchCount ?? 0);
-
-      if (data.tabSwitchCount && data.tabSwitchCount <= 3) {
-        setWarningMessage(`Warning ${data.tabSwitchCount}`);
-        setShowWarning(true);
-      } else if (data.tabSwitchCount > 3) {
-        toast.error(
-          "You exited fullscreen or switched tabs 3 times. Auto-submitting quiz.",
-        );
-        handleSubmit();
-      }
     } catch (error) {
       console.error("Error updating tab switch count:", error);
     }
@@ -212,7 +197,7 @@ const Quiz: React.FC = () => {
   useEffect(() => {
     const handleExit = () => {
       if (
-        (document.hidden || !document.fullscreenElement) &&
+        (document.hidden || !document.fullscreenElement || !document.hasFocus()) &&
         sessionLoaded &&
         !submitted &&
         !isPaused
@@ -223,10 +208,12 @@ const Quiz: React.FC = () => {
 
     document.addEventListener("visibilitychange", handleExit);
     document.addEventListener("fullscreenchange", handleExit);
+    window.addEventListener("blur", handleExit);
 
     return () => {
       document.removeEventListener("visibilitychange", handleExit);
       document.removeEventListener("fullscreenchange", handleExit);
+      window.removeEventListener("blur", handleExit);
     };
   }, [sessionLoaded, submitted, incrementTabSwitchCount, isPaused]);
 
@@ -314,12 +301,6 @@ const Quiz: React.FC = () => {
 
   return (
     <>
-      <WarningModal
-        open={showWarning}
-        message={warningMessage}
-        onClose={() => setShowWarning(false)}
-      />
-
       <SubmitConfirmModal
         open={showSubmitConfirm}
         onClose={() => setShowSubmitConfirm(false)}

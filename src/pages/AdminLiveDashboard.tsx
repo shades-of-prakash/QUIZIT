@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< Updated upstream
 import { Loader2, Pause, Play, XOctagon, Check, Inbox } from "lucide-react";
+=======
+import { Loader2, Pause, Play, XOctagon, Check, Inbox, AlertTriangle } from "lucide-react";
+>>>>>>> Stashed changes
 import { toast } from "sonner";
 
 interface RequestItem {
@@ -10,11 +14,14 @@ interface RequestItem {
 	quizId: string;
 	status: "PENDING" | "APPROVED" | "PAUSED" | "REJECTED" | "COMPLETED";
 	requestedAt: string;
+	tabSwitchCount?: number;
 }
 
 const AdminLiveDashboard = () => {
 	const [requests, setRequests] = useState<RequestItem[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [activeTab, setActiveTab] = useState<"requests" | "sessions">("requests");
+	const [sortOrder, setSortOrder] = useState<"desc" | "asc" | "none">("none");
 
 	const [revokeModalOpen, setRevokeModalOpen] = useState(false);
 	const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
@@ -39,6 +46,10 @@ const AdminLiveDashboard = () => {
 		const interval = setInterval(fetchRequests, 3000);
 		return () => clearInterval(interval);
 	}, []);
+
+	useEffect(() => {
+		setSelectedIds(new Set());
+	}, [activeTab]);
 
 	const handleApprove = async (req: RequestItem) => {
 		try {
@@ -114,7 +125,24 @@ const AdminLiveDashboard = () => {
 
 	const displayRequests = requests
 		.filter(r => r.status !== "REJECTED" && r.status !== "COMPLETED") // Hide rejected and completed from the main table, keep pending/approved/paused
+<<<<<<< Updated upstream
 		.sort((a, b) => {
+=======
+		.filter(r => {
+			if (activeTab === "requests") return r.status === "PENDING";
+			if (activeTab === "sessions") return r.status === "APPROVED" || r.status === "PAUSED";
+			return true;
+		})
+		.sort((a, b) => {
+			if (activeTab === "sessions" && sortOrder !== "none") {
+				const countA = a.tabSwitchCount || 0;
+				const countB = b.tabSwitchCount || 0;
+				if (countA !== countB) {
+					return sortOrder === "desc" ? countB - countA : countA - countB;
+				}
+			}
+
+>>>>>>> Stashed changes
 			// Put PENDING at the top
 			if (a.status === "PENDING" && b.status !== "PENDING") return -1;
 			if (a.status !== "PENDING" && b.status === "PENDING") return 1;
@@ -211,6 +239,7 @@ const AdminLiveDashboard = () => {
 						Manage exam logins and active sessions
 					</p>
 				</div>
+<<<<<<< Updated upstream
 				<div className="flex gap-4">
 					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium">
 						<span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
@@ -219,7 +248,31 @@ const AdminLiveDashboard = () => {
 					<div className="flex items-center gap-2 text-sm text-zinc-600 font-medium border-l border-zinc-300 pl-4">
 						<span className="w-2 h-2 rounded-full bg-green-500"></span>
 						Active Sessions: {requests.filter(r => r.status === "APPROVED" || r.status === "PAUSED").length}
+=======
+				<div className="flex gap-4 items-center">
+					<div className="flex gap-2 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
+						<button 
+							onClick={() => setActiveTab("requests")}
+							className={`flex items-center gap-2 text-sm font-medium px-4 py-1.5 rounded-md transition-colors ${activeTab === "requests" ? "bg-white text-zinc-900 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700"}`}
+						>
+							<span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+							Waiting Room ({requests.filter(r => r.status === "PENDING").length})
+						</button>
+						<button 
+							onClick={() => setActiveTab("sessions")}
+							className={`flex items-center gap-2 text-sm font-medium px-4 py-1.5 rounded-md transition-colors ${activeTab === "sessions" ? "bg-white text-zinc-900 shadow-sm border border-zinc-200" : "text-zinc-500 hover:text-zinc-700"}`}
+						>
+							<span className="w-2 h-2 rounded-full bg-green-500"></span>
+							Active Sessions ({requests.filter(r => r.status === "APPROVED" || r.status === "PAUSED").length})
+						</button>
+>>>>>>> Stashed changes
 					</div>
+					{requests.filter(r => (r.status === "APPROVED" || r.status === "PAUSED") && (r.tabSwitchCount || 0) > 3).length > 0 && (
+						<div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-md border border-red-200 text-sm font-bold shadow-sm animate-pulse" title="Students with more than 3 warnings">
+							<AlertTriangle size={15} strokeWidth={2.5} />
+							{requests.filter(r => (r.status === "APPROVED" || r.status === "PAUSED") && (r.tabSwitchCount || 0) > 3).length} Critical
+						</div>
+					)}
 				</div>
 			</header>
 
@@ -242,7 +295,11 @@ const AdminLiveDashboard = () => {
 					</div>
 				) : (
 					<div className="flex-1 flex flex-col min-h-0">
+<<<<<<< Updated upstream
 						{selectedIds.size > 0 && (
+=======
+						{activeTab === "requests" && selectedIds.size > 0 && (
+>>>>>>> Stashed changes
 							<div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 flex items-center justify-between shrink-0">
 								<span className="text-sm text-blue-800 font-medium">{selectedIds.size} request(s) selected</span>
 								<div className="flex gap-2">
@@ -259,6 +316,7 @@ const AdminLiveDashboard = () => {
 							<table className="w-full text-sm">
 								<thead className="bg-black/90 text-gray-300 sticky top-0 z-10">
 									<tr>
+<<<<<<< Updated upstream
 										<th className="px-4 py-2 w-12 text-center">
 											<input 
 												type="checkbox" 
@@ -274,6 +332,41 @@ const AdminLiveDashboard = () => {
 									<th className="px-4 py-2 text-center">Status</th>
 									<th className="px-4 py-2 text-center">Actions</th>
 								</tr>
+=======
+										{activeTab === "requests" && (
+											<th className="px-4 py-2 w-12 text-center">
+												<input 
+													type="checkbox" 
+													onChange={handleSelectAll} 
+													checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length} 
+													className="w-4 h-4 accent-black rounded cursor-pointer" 
+												/>
+											</th>
+										)}
+										<th className="px-4 py-2 text-left">#</th>
+										<th className="px-4 py-2 text-left">Student Name</th>
+										<th className="px-4 py-2 text-left">Roll No</th>
+										<th className="px-4 py-2 text-left">College</th>
+										<th className="px-4 py-2 text-center">
+											{activeTab === "sessions" ? (
+												<button 
+													onClick={() => setSortOrder(prev => prev === "desc" ? "asc" : prev === "asc" ? "none" : "desc")}
+													className="flex items-center justify-center gap-1 mx-auto hover:text-white transition"
+													title="Sort by Warnings"
+												>
+													Status / Warnings
+													<span className="text-[10px] bg-zinc-700 px-1.5 py-0.5 rounded flex gap-0.5 opacity-80">
+														<span className={sortOrder === "asc" ? "text-white" : ""}>▲</span>
+														<span className={sortOrder === "desc" ? "text-white" : ""}>▼</span>
+													</span>
+												</button>
+											) : (
+												"Status"
+											)}
+										</th>
+										<th className="px-4 py-2 text-center">Actions</th>
+									</tr>
+>>>>>>> Stashed changes
 							</thead>
 							<tbody>
 								{displayRequests.map((req, index) => (
@@ -281,6 +374,7 @@ const AdminLiveDashboard = () => {
 										key={req._id}
 										className="border-t border-gray-200 hover:bg-gray-50 transition"
 									>
+<<<<<<< Updated upstream
 										<td className="px-4 py-2 text-center">
 											<input 
 												type="checkbox" 
@@ -289,26 +383,45 @@ const AdminLiveDashboard = () => {
 												className="w-4 h-4 accent-black rounded cursor-pointer" 
 											/>
 										</td>
+=======
+										{activeTab === "requests" && (
+											<td className="px-4 py-2 text-center">
+												<input 
+													type="checkbox" 
+													checked={selectedIds.has(req._id)} 
+													onChange={() => handleSelectRow(req._id)} 
+													className="w-4 h-4 accent-black rounded cursor-pointer" 
+												/>
+											</td>
+										)}
+>>>>>>> Stashed changes
 										<td className="px-4 py-2">{index + 1}</td>
 										<td className="px-4 py-2 font-medium">{req.participant1Name}</td>
 										<td className="px-4 py-2 font-mono text-gray-600">{req.participant1RollNo}</td>
 										<td className="px-4 py-2 text-gray-600">{req.collegeName || "N/A"}</td>
-										<td className="px-4 py-2 text-center">
-											{req.status === "PENDING" && (
-												<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 animate-pulse border border-yellow-200">
-													Waiting
-												</span>
-											)}
-											{req.status === "APPROVED" && (
-												<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-													Active
-												</span>
-											)}
-											{req.status === "PAUSED" && (
-												<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
-													Paused
-												</span>
-											)}
+										<td className="px-4 py-2">
+											<div className="flex gap-2 justify-center items-center">
+												{req.status === "PENDING" && (
+													<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 animate-pulse border border-yellow-200">
+														Waiting
+													</span>
+												)}
+												{req.status === "APPROVED" && (
+													<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+														Active
+													</span>
+												)}
+												{req.status === "PAUSED" && (
+													<span className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+														Paused
+													</span>
+												)}
+												{(req.tabSwitchCount ?? 0) > 0 && (
+													<span className="inline-flex items-center gap-1 py-1 px-2 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 shadow-sm" title={`${req.tabSwitchCount} tab switches / F11 exits detected`}>
+														<AlertTriangle size={12} strokeWidth={2.5} /> {req.tabSwitchCount}
+													</span>
+												)}
+											</div>
 										</td>
 										<td className="px-4 py-2 flex gap-2 justify-center items-center">
 											{req.status === "PENDING" && (

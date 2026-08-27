@@ -1000,6 +1000,15 @@ export async function updateTabSwitchCountController(req: Request) {
       { $set: { tabSwitchCount: newCount, lastUpdated: Date.now() } },
     );
 
+    // Fetch user to get participant1RollNo and auto-pause them
+    const user = await usersCollection().findOne({ _id: new ObjectId(userId) });
+    if (user) {
+      await db!.collection("approval_requests").updateOne(
+        { quizId, participant1RollNo: user.participant1RollNo },
+        { $set: { status: "PAUSED" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ success: true, tabSwitchCount: newCount }),
       { status: 200, headers: { "Content-Type": "application/json" } },

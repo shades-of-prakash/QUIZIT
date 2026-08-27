@@ -108,8 +108,25 @@ export async function getAdminLiveDashboard(req: Request) {
 
 	try {
 		const requests = await approvalRequestsCollection().find({}).sort({ requestedAt: -1 }).toArray();
-		return new Response(JSON.stringify({ requests }));
+
+		// Map to attach tabSwitchCount (F11 exits/tab switches)
+		const users = await usersCollection().find({}).toArray();
+		const userMap = new Map();
+		users.forEach(u => userMap.set(`${u.quizId}_${u.participant1RollNo}`, u._id.toString()));
+
+		const sessions = await db!.collection("quiz-session").find({}).toArray();
+		const sessionMap = new Map();
+		sessions.forEach(s => sessionMap.set(`${s.quizId}_${s.userId}`, s.tabSwitchCount || 0));
+
+		const requestsWithCounts = requests.map(req => {
+			const userId = userMap.get(`${req.quizId}_${req.participant1RollNo}`);
+			const tabSwitchCount = userId ? (sessionMap.get(`${req.quizId}_${userId}`) || 0) : 0;
+			return { ...req, tabSwitchCount };
+		});
+
+		return new Response(JSON.stringify({ requests: requestsWithCounts }));
 	} catch (err) {
+		console.error("Dashboard error:", err);
 		return new Response(JSON.stringify({ message: "Server error" }), { status: 500 });
 	}
 }
